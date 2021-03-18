@@ -1,0 +1,26 @@
+SimulationType                MonteCarlo
+NumberOfCycles                N_cycles
+NumberOfInitializationCycles  10000
+PrintPropertiesEvery          N_cycles
+RestartFile                   no  
+
+Forcefield                    FORCE_FIELD
+
+Framework 0
+ChargeMethod None
+FrameworkName Arg
+CutOffVDW 12
+UnitCells UNITCELL
+ExternalTemperature 298.0
+
+NumberOfGrids N_ATOMS
+GridTypes ATOMS
+SpacingVDWGrid 0.1
+SpacingCoulombGrid 0.1
+UseTabularGrid yes
+
+Component 0 MoleculeName                     MOLECULE
+            MoleculeDefinition               TraPPE
+            IdealRosenbluthValue             1.0
+            WidomProbability                 1.0
+            CreateNumberOfMolecules          0

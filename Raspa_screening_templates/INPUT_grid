@@ -1,0 +1,12 @@
+SimulationType MakeGrid
+Forcefield     FORCE_FIELD
+Framework 0
+FrameworkName Arg
+ChargeMethod None
+CutOffVDW 12
+
+UnitCells UNITCELL
+NumberOfGrids N_ATOMS
+GridTypes ATOMS
+SpacingVDWGrid 0.1
+SpacingCoulombGrid 0.1

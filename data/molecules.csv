@@ -1,0 +1,8 @@
+MOLECULE,ATOMS
+xenon,Xe
+krypton,Kr
+N2,N_n2 N_com
+O2,O_o2 O_com
+argon,Ar
+CO2,C_co2 O_co2
+water,Ow Hw Mw

@@ -1,0 +1,3 @@
+export RASPA_DIR=$CCCSCRATCHDIR/Simulations
+export DYLD_LIBRARY_PATH=${RASPA_DIR}/lib
+export LD_LIBRARY_PATH=${RASPA_DIR}/lib

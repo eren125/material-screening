@@ -1,0 +1,17 @@
+SimulationType                MonteCarlo
+NumberOfCycles                10000
+PrintEvery                    10000
+PrintPropertiesEvery          10000
+RestartFile                   no  
+
+Forcefield                    UFF
+
+Framework 0
+FrameworkName Arg
+UnitCells UNITCELL
+ExternalTemperature 298.0
+
+Component 0 MoleculeName                     helium
+            MoleculeDefinition               TraPPE
+            WidomInsertion                   1.0
+            CreateNumberOfMolecules          0
