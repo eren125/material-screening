@@ -16,6 +16,7 @@ SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'po
 
 
 # TODO
+# Finish coad
 # Add single point simulation logic
 # Chain several sp sim
 # Move procs and procs_per_node to mp_run?
