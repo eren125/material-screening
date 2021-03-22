@@ -1,8 +1,8 @@
 SimulationType                MonteCarlo
-NumberOfCycles                10000
-PrintEvery                    10000
-PrintPropertiesEvery          10000
-RestartFile                   no  
+NumberOfCycles                N_cycles
+NumberOfInitializationCycles  N_init
+PrintPropertiesEvery          N_print
+RestartFile                   no
 
 Forcefield                    UFF
 
