@@ -1,0 +1,4 @@
+.vscode
+.ipynb_checkpoints
+src/__pycache__/
+test/
