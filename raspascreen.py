@@ -15,12 +15,12 @@ parser.add_argument('-f', '--forcefield', nargs='?', default="UFF",
                     help='specify the force field you want to use (GenericMOFs, UFF, GenericZeolites, etc.)\ndefault = UFF')
 
 parser.add_argument('-s', '--structures', nargs='?', required=True,
-                    help='specify the structures in a csv file\nExample: structures_sample.csv')
+                    help='specify the structures in a csv file\nExample: structures_sample.csv\nThis file have to contain "Structures" as a header name.')
 
 parser.add_argument('-n', '--nprocesses', nargs='?', default='24',
                     help='specify the number of processes to run at a time\ndefault = 24')
 
-parser.add_argument('-p', '--procspernode', nargs='?', default='48',
+parser.add_argument('-ppn', '--procspernode', nargs='?', default='48',
                     help='specify the number of processors per node in the cluster\ndefault = 48')
 
 parser.add_argument('-N', '--Ncycles', nargs='?', default='1000',
@@ -35,11 +35,14 @@ parser.add_argument('-r', '--radius', nargs='?', default='1.2',
 parser.add_argument('-m', '--molecules', nargs='+', default=['xenon','krypton'],
                     help='specify the adsorbent molecules\nExample: xenon krypton CO2')
 
-parser.add_argument('-ps', '--pressures', nargs='+', default=['100000'],
+parser.add_argument('-p', '--pressures', nargs='+', default=['100000'],
                     help='specify the adsorbent molecules\nExample: xenon krypton CO2')
 
-parser.add_argument('-c', '--composition', nargs=2,
+parser.add_argument('-c', '--composition', nargs=2, default=None,
                     help='specify the composition of each adsorbent molecule for coadsorption simulation\nExample: 90 10')
+
+parser.add_argument('-pos', '--positions', nargs='?', default=None,
+                    help='specify a csv file with the coordinates of the adsorbents for single point simulations')
 
 parser.add_argument('-o', '--output_directory', nargs='?', default='.',
                     help='specify the directory in which you want the simulation files to be installed')
@@ -56,10 +59,12 @@ PRESSURES = args.pressures
 
 CYCLES = args.Ncycles
 COMPOSITION = args.composition
+positions = args.positions
 radius = float(args.radius)
 
 nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
-screen = Screening(structures_file, FORCE_FIELD, MOLECULES, PRESSURES, nprocs, OUTPUT_PATH=OUTPUT_PATH,probe_radius=radius, procs_per_node=ppn, type_=option, COMPOSITION=COMPOSITION, CYCLES=CYCLES)
+screen = Screening(structures_file, FORCE_FIELD, MOLECULES, PRESSURES, nprocs, OUTPUT_PATH=OUTPUT_PATH,probe_radius=radius, 
+         procs_per_node=ppn, type_=option, COMPOSITION=COMPOSITION, CYCLES=CYCLES, positions=positions)
 
 screen.mp_run()
