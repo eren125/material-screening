@@ -11,32 +11,11 @@ ChargeMethod None
 FrameworkName Arg
 CutOffVDW CUTOFF
 UnitCells UNITCELL
-ExternalTemperature 298.0
-ExternalPressure 101300
+ExternalTemperature TEMPERATURE
+ExternalPressure PRESSURES
 
 NumberOfGrids N_ATOMS
 GridTypes ATOMS
 SpacingVDWGrid 0.1
 SpacingCoulombGrid 0.1
 UseTabularGrid yes
-
-Component 0 MoleculeName                     MOLECULE_1
-            MoleculeDefinition               TraPPE
-            TranslationProbability           0.5
-            IdentityChangeProbability        1.0
-              NumberOfIdentityChanges        2
-              IdentityChangesList            0 1
-            SwapProbability                  1.0
-            CreateNumberOfMolecules          0
-            MolFraction                      Y_1
-
-
-Component 1 MoleculeName                     MOLECULE_2
-            MoleculeDefinition               TraPPE
-            TranslationProbability           0.5
-            IdentityChangeProbability        1.0
-              NumberOfIdentityChanges        2
-              IdentityChangesList            0 1
-            SwapProbability                  1.0
-            CreateNumberOfMolecules          0
-            MolFraction                      Y_2
