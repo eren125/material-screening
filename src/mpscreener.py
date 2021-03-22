@@ -58,6 +58,9 @@ class Screening():
                                       it will then be set to an empty string by default
 
         self methods:
+            generate_files
+            generate
+            write_file
             run   : function that takes the framework's name and the smallest unitcell for a 12 angstrom cut-off
                     and runs the corresponding simulation according to the run bash file 
             run_mp: function that calls `run` multiple times in parallel. mp.Pool distributes the jobs to $nprocs workers
@@ -197,7 +200,8 @@ class Screening():
         else:
             generated_file = open(path,"r").read()
             for key, value in replace_string.items():
-                generated_file.replace(key, str(value))
+                generated_file = generated_file.replace(str(key), str(value))
+            print(generated_file)
             return generated_file
 
 
