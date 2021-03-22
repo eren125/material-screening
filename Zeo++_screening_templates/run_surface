@@ -1,7 +1,7 @@
 #! /bin/bash
 node=$(hostname)
-export ZEO_DIR=$CCCSCRATCHDIR/zeo++-0.3
-export RASPA_DIR=$CCCSCRATCHDIR/Simulations
+source ${RASPASCREEN}/set_environement
+
 cd "$(dirname "$0")" 
 ${ZEO_DIR}/network -ha -sa ${2} ${2} NCYCLES Output/results_${1}_${2}.sa ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&
 echo "structures ${1} radius ${2} Simulation DONE on $node"
