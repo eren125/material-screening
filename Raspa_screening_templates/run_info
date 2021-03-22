@@ -1,6 +1,6 @@
 #! /bin/bash
 node=$(hostname)
-source ${RASPASCREEN}/set_environement
+source ${RASPASCREEN}/set_environment
 
 cd "$(dirname "$0")"
 cp INPUT Scripts/simulation_${1}.input
