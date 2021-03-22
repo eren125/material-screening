@@ -1,5 +1,5 @@
 SimulationType                MonteCarlo
-NumberOfCycles                1
+NumberOfCycles                0
 RestartFile                   no  
 
 Forcefield                    UFF
@@ -8,12 +8,7 @@ Framework 0
 FrameworkName Arg
 UnitCells 1 1 1
 ExternalTemperature 298.0
-ExternalPressure 101300
 
 Component 0 MoleculeName                     helium
             MoleculeDefinition               TraPPE
-            TranslationProbability           1.0
-            RotationProbability              0.0
-            ReinsertionProbability           1.0
-            SwapProbability                  1.0
             CreateNumberOfMolecules          0

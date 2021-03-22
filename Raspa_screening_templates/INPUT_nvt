@@ -12,7 +12,7 @@ FrameworkName Arg
 CutOffVDW CUTOFF
 UnitCells UNITCELL
 ExternalTemperature TEMPERATURE
-ExternalPressure PRESSURES 
+ExternalPressure 0 
 
 NumberOfGrids N_ATOMS
 GridTypes ATOMS
@@ -25,5 +25,4 @@ Component 0 MoleculeName                     MOLECULE
             TranslationProbability           1.0
             RotationProbability              0.0
             ReinsertionProbability           1.0
-            SwapProbability                  1.0
-            CreateNumberOfMolecules          0
+            CreateNumberOfMolecules          1
