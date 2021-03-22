@@ -57,14 +57,14 @@ MOLECULES = args.molecules
 OUTPUT_PATH = args.output_directory
 PRESSURES = args.pressures
 
-CYCLES = args.Ncycles
+CYCLES = int(args.Ncycles)
 COMPOSITION = args.composition
 positions = args.positions
 radius = float(args.radius)
 
 nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
-screen = Screening(structures_file, FORCE_FIELD, MOLECULES, PRESSURES, nprocs, OUTPUT_PATH=OUTPUT_PATH,probe_radius=radius, 
-         procs_per_node=ppn, type_=option, COMPOSITION=COMPOSITION, CYCLES=CYCLES, positions=positions)
+screen = Screening(structures_file, FORCE_FIELD, MOLECULES, nprocs, pressures=PRESSURES, OUTPUT_PATH=OUTPUT_PATH,probe_radius=radius, 
+         procs_per_node=ppn, type_=option, composition=COMPOSITION, cycles=CYCLES, positions=positions)
 
 screen.mp_run()

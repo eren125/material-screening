@@ -9,8 +9,6 @@ import pandas as pd
 
 import multiprocessing as mp
 
-from bash_commands import copy_dir, copy_file, sed, bash
-
 SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'point'],
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi']
@@ -24,8 +22,8 @@ SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'po
 # ADD cutoff as a variable for raspa simulations
 
 class Screening():
-    def __init__(self, structures_file, force_field, MOLECULES, PRESSURES, nprocs, OUTPUT_PATH=".", TEMP=298.0, 
-    probe_radius=1.2, Threshold_volume=20, procs_per_node=48, type_='grid', COMPOSITION=None, positions=None, cycles=2000, setup=True):
+    def __init__(self, structures_file, force_field, MOLECULES, nprocs, pressures=[101300], temperature=298.0, cutoff=12, probe_radius=1.2, 
+    Threshold_volume=20, procs_per_node=48, type_='grid', OUTPUT_PATH=".", composition=None, positions=None, cycles=2000, setup=True):
         """A class for screening purposes using Raspa2 for molecular simulations
         (the path of the Raspa directory have to be exported as en environement variable)
 
@@ -35,7 +33,7 @@ class Screening():
             force_field        (str): force field used for the molecular simulations, 
                                       it must be defined in the Raspa directory 
             MOLECULES         (list): list of molecules (str) to be adsorbed on the materials
-            PRESSURES         (list): list of pressures (float) in pascal to be simulated
+            pressures         (list): list of pressures (float) in pascal to be simulated
             nprocs             (int): number of processes to be run at the same time
             OUTPUT_PATH        (str): relative path to where the outputs of the simulations will be printed
             TEMP             (float): temperature in kelvin for the Raspa2 simulations (default = 298.0 K)
@@ -46,7 +44,7 @@ class Screening():
             type_              (str): type of simulation the user wants to carry out. Currently available:
                                       grid calculation via 'grid', GCMC via 'ads' 'coad', NVT MC via 'ent',
                                       Widom's insertion via 'widom', helium void fraction via 'vf', Zeo++ via 'surface' 'volume' 'pore' 'channel' and global information via 'info'.
-            COMPOSITION       (list): list of mole fractions for the molecules defined in MOLECULES
+            composition       (list): list of mole fractions for the molecules defined in MOLECULES
                                       must have the same length as MOLECULES, and sum must equal to 1
             cycles             (int): number of prodution cycles used for the Raspa2 simulations
                                       equilibration cycles are fixed to 10k for now (to improve)
@@ -57,8 +55,6 @@ class Screening():
             NODES              (str): names of the nodes allocated by the supercalculator
                                       if you are running on a local computer 'NODES' does not exist
                                       it will then be set to an empty string by default
-            mol2atoms         (dict): dictionnary with molecule names as keys and list of atoms associated as values
-            data
 
         self methods:
             run   : function that takes the framework's name and the smallest unitcell for a 12 angstrom cut-off
@@ -80,8 +76,10 @@ class Screening():
             if len(self.NODES)*procs_per_node > nprocs:
                 raise ValueError('More processes at a time than proccessors available!!!')
         self.nprocs = nprocs
-        available_types = ['ads', 'ent', 'widom', 'coad', 'grid', 'info','vf','surface','volume','pore','channel']
 
+        available_types = []
+        for key in SIMULATION_TYPES.keys():
+            available_types += SIMULATION_TYPES[key]
         if type_ not in available_types:
             raise ValueError(('%s not an option yet. Please choose between: ' +
                 ', '.join(['%s']*len(available_types))) % tuple([type_]+available_types))
@@ -89,22 +87,20 @@ class Screening():
         if (type_=='point') and (not positions):
             raise ValueError("Please specify the path to a csv file with positions. See examples in data/positions_sample.csv.")
 
-        if (type_=='coad') and (not COMPOSITION):
+        if (type_=='coad') and (not composition):
             raise ValueError("Please specify a composition, for example: 20 80")
 
-        if COMPOSITION:
-            if sum([float(c) for c in COMPOSITION]) != 100.0:
+        if composition:
+            if sum([float(c) for c in composition]) != 100.0:
                 raise ValueError("Composition does not add up to 100%%")
-        self.type_ = type_
 
         df_mol = pd.read_csv(os.path.join(SOURCE_DIR, '../data/molecules.csv'), encoding='utf-8')
         if not all([molecule in list(df_mol['MOLECULE']) for molecule in MOLECULES]):
             raise ValueError('one of the molecules %s not in adsorbent list' %(' '.join(MOLECULES)))
-        self.mol2atoms = {row['MOLECULE']: row['ATOMS'].split() for index,row in df_mol.iterrows()}
+        mol2atoms = {row['MOLECULE']: row['ATOMS'] for index,row in df_mol.iterrows()}
 
         if not all([M in list(df_mol['MOLECULE']) for M in MOLECULES]):
             raise ValueError("The molecules mentioned are not supported by the code, see the data directory in the source directory")
-        self.MOLECULES = MOLECULES
 
         df_structures = pd.read_csv(structures_file, encoding='utf-8')
         df_structures = df_structures[['Structures']]
@@ -123,69 +119,69 @@ class Screening():
                 self.data = df[['STRUCTURE_NAME','ProbeRadius']].to_records(index=False)
 
         if setup==True:
-            print_every = N_cycles // 10
+            print_every = cycles // 10
             init_cycles = min(cycles // 2, 10000)
-            self.generate_files(OUTPUT_PATH, type_, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles)
+            ATOMS = ' '.join([mol2atoms[molecule] for molecule in MOLECULES])
+            N_ATOMS = len(ATOMS.split())
 
+            self.generate_files(OUTPUT_PATH, type_, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
+            CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0])
+
+            if type_ == "coad":
+                # loop over mole fractions and molecules
+                s = """
+                Component 0 MoleculeName                     MOLECULE_1
+                            MoleculeDefinition               TraPPE
+                            TranslationProbability           0.5
+                            IdentityChangeProbability        1.0
+                              NumberOfIdentityChanges        2
+                              IdentityChangesList            0 1
+                            SwapProbability                  1.0
+                            CreateNumberOfMolecules          0
+                            MolFraction                      Y_1
+
+
+                Component 1 MoleculeName                     MOLECULE_2
+                            MoleculeDefinition               TraPPE
+                            TranslationProbability           0.5
+                            IdentityChangeProbability        1.0
+                              NumberOfIdentityChanges        2
+                              IdentityChangesList            0 1
+                            SwapProbability                  1.0
+                            CreateNumberOfMolecules          0
+                            MolFraction                      Y_2
+                """
+
+        print("%s simulation of %s"%(type_,' '.join(MOLECULES)))
 
     def generate_files(self, path_to_work, type_, **kwargs):
         """Generate the files need for the simulations
 
         Args:
             path_to_work (str): path to the working directory, where the simulations occur
-
         """
 
         # create input
-        path_to_input = os.path.join(SOURCE_DIR, "../Raspa_screening_templates/INPUT_%s"%type_)
-        generate(path_to_input, **kwargs)
-
-
-        if type_ in SIMULATION_TYPES['RASPA2']:
+        if type_ in SIMULATION_TYPES['RASPA2']+SIMULATION_TYPES["INFO"]:
             path_to_Scripts = os.path.join(path_to_work, 'Scripts')
             if not os.path.exists(path_to_Scripts):
                 os.mkdir(path_to_Scripts)
-            copy_file(SOURCE_DIR,"../Raspa_screening_templates/INPUT_%s"%type_,path_to_work,"INPUT")
-            copy_file(SOURCE_DIR,"../Raspa_screening_templates/run",path_to_work,"run")
+            path_to_INPUT = os.path.join(SOURCE_DIR, "../Raspa_screening_templates/INPUT_%s"%type_)
+            INPUT_file = self.generate(path_to_INPUT, **kwargs)
+            self.write_file(INPUT_file, os.path.join(path_to_work, "INPUT"))
+            RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run"), "r").read()
+            self.path_to_run = os.path.join(path_to_work,"run")
+            self.write_file(RUN_file, self.path_to_run)
             if type_ != 'grid':
-                copy_file(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_,path_to_work,"data.sh")
-        elif type_ == "info":
-            path_to_Scripts = os.path.join(path_to_work, 'Scripts')
-            if not os.path.exists(path_to_Scripts):
-                os.mkdir(path_to_Scripts)
-            copy_file(SOURCE_DIR,"../Raspa_screening_templates/INPUT_%s"%type_,path_to_work,"INPUT")
-            copy_file(SOURCE_DIR,"../Raspa_screening_templates/run_%s"%type_,path_to_work,"run")
-        else: # zeo++ modules
-            path_to_output = os.path.join(path_to_work, 'Output')
-            if not os.path.exists(path_to_output):
-                os.mkdir(path_to_output)
-            copy_file(SOURCE_DIR,"../Zeo++_screening_templates/run_%s"%type_,path_to_work,"run")
-
-        self.path_to_run = os.path.join(path_to_work,"run")
-        path_to_data = os.path.join(path_to_work,"data.sh")
-        path_to_INPUT = os.path.join(path_to_work, 'INPUT')
-        sed("FORCE_FIELD",FORCE_FIELD,path_to_INPUT)
-        if CYCLES:
-            sed("N_cycles",CYCLES,path_to_INPUT)
-            sed("NCYCLES",CYCLES,self.path_to_run)
-
-        ATOMS = []
-        for molecule in MOLECULES:
-            atoms = self.mol2atoms[molecule]
-            ATOMS += atoms
-
-        sed("N_ATOMS", len(ATOMS), path_to_INPUT)
-        sed("ATOMS",' '.join(ATOMS),path_to_INPUT)
-        sed("PRESSURES",' '.join(PRESSURES),path_to_INPUT)
-        if self.type_ == 'coad':
-            sed("MOLECULE",MOLECULES[0],path_to_INPUT)
-            sed("MOLECULE",MOLECULES[0],path_to_data)
-        elif len(MOLECULES) == 2:
-            Y = [round(float(c)/100,6) for c in COMPOSITION]
-            sed("MOLECULE_1",MOLECULES[0],path_to_INPUT)
-            sed("Y_1",Y[0],path_to_INPUT)
-            sed("MOLECULE_2",MOLECULES[1],path_to_INPUT)
-            sed("Y_2",Y[1],path_to_INPUT)
+                DATA_file = open(os.path.join(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_), "r").read()
+                self.write_file(DATA_file, os.path.join(path_to_work,"data.sh"))
+        elif type_ in SIMULATION_TYPES["ZEO++"]:
+            path_to_Output = os.path.join(path_to_work, 'Output')
+            if not os.path.exists(path_to_Output):
+                os.mkdir(path_to_Output)
+            RUN_file = open(os.path.join(SOURCE_DIR,"../Zeo++_screening_templates/run_%s"%type_), "r").read()
+            self.path_to_run = os.path.join(path_to_work,"run")
+            self.write_file(RUN_file, self.path_to_run)
 
 
     @staticmethod
@@ -194,14 +190,13 @@ class Screening():
 
         Args:
             path (str): path to the INPUT or run or data file (Raspa_screening_templates)
-
         """
         if not os.path.exists(path):
             return None
         else:
-            generated_file = open(path,"r")
+            generated_file = open(path,"r").read()
             for key, value in replace_string.items():
-                generated_file.replace(key, value)
+                generated_file.replace(key, str(value))
             return generated_file
 
 
@@ -212,16 +207,16 @@ class Screening():
         Args:
             generated_file (str): content of the generated file
             outfile_path (str): path to the output file 
-
         """
 
         with open(outfile_path, "w") as outfile:
             outfile.write(generated_file)
-            outfile_path.close()
+            outfile.close()
 
 
     def run(self, inputs):
-        """A module to run one simulation on a given node according to the current process id"""
+        """A module to run one simulation on a given node according to the current process id
+        """
 
         FRAMEWORK_NAME,UNITCELL = inputs
         if len(self.NODES) == 0:
@@ -234,10 +229,10 @@ class Screening():
         return os.system(command)
 
     def mp_run(self):
-        """Using multiprocessing, runs in parallel the simulations"""
+        """Using multiprocessing, runs in parallel the simulations
+        """
 
         t0 = time()
-        print("%s simulation of %s"%(self.type_,' '.join(self.MOLECULES)))
         with mp.Pool(processes=self.nprocs) as p:
             p.map(self.run, [(FRAMEWORK_NAME,UNITCELL) for FRAMEWORK_NAME,UNITCELL in self.data])
         print("SIMULATIONS COMPLETED after %.2f hour(s)"%((time()-t0)/3600))
