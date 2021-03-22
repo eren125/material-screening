@@ -3,7 +3,7 @@ Forcefield     FORCE_FIELD
 Framework 0
 FrameworkName Arg
 ChargeMethod None
-CutOffVDW 12
+CutOffVDW CUTOFF
 
 UnitCells UNITCELL
 NumberOfGrids N_ATOMS

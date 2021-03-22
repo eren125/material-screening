@@ -9,7 +9,7 @@ Forcefield                    FORCE_FIELD
 Framework 0
 ChargeMethod None
 FrameworkName Arg
-CutOffVDW 12
+CutOffVDW CUTOFF
 UnitCells UNITCELL
 ExternalTemperature 298.0
 
