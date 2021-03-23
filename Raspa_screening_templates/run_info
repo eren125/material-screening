@@ -9,3 +9,4 @@ echo "${1} ${2} Script DONE on $node"
 ${RASPA_DIR}/bin/simulate -i Scripts/simulation_${1}.input > /dev/null 2>&1
 echo "${1} ${2} Simulation DONE on $node"
 rm Scripts/simulation_${1}.input
+rm Restart/restart_${1}_*
