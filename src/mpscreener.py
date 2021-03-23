@@ -17,18 +17,17 @@ SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'po
 
 
 # TODO
-# Add timer inside run files and echo in a file to create a database of time spent per sim // 
-# can get it from output but more accurate (including preprocessing time)
 # Add single point simulation logic
 # Chain several sp sim
 # Move procs and procs_per_node to mp_run?
-# ADD cutoff as a variable for raspa simulations
 
 class Screening():
     def __init__(self, structures_file, force_field, MOLECULES, nprocs, pressures=[101300], temperature=298.0, cutoff=12, probe_radius=1.2, 
     Threshold_volume=20, procs_per_node=48, type_='grid', OUTPUT_PATH=".", composition=None, positions=None, cycles=2000, setup=True):
         """A class for screening purposes using Raspa2 for molecular simulations
-        (the path of the Raspa directory have to be exported as en environement variable)
+        Initialise important variables like the name of the structures to screen and the unitcell associated
+        Catch Obvious value errors, incompatible mix of varibles, etc.
+        If setup is True, creates file for the simulation INPUT and run mainly (data for post-processing and RestartInitial for single point calculations)
 
         Args:
             structures_file    (str): relative path to the csv file containing all the structures, 
