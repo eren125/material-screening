@@ -12,40 +12,40 @@ parser = argparse.ArgumentParser(
     epilog="")
 
 parser.add_argument('-f', '--forcefield', nargs='?', default="UFF",
-                    help='specify the force field you want to use (GenericMOFs, UFF, GenericZeolites, etc.)\ndefault = UFF')
+                    help='specify the force field you want to use (GenericMOFs, UFF, GenericZeolites, etc.)\nDefault = UFF')
 
 parser.add_argument('-s', '--structures', nargs='?', required=True,
-                    help='specify the structures in a csv file\nExample: structures_sample.csv\nThis file have to contain "Structures" as a header name.')
+                    help='specify the structures to screen in a csv file\nExample: structures_sample.csv\nThis csv file is required and has to contain "Structures" as a header name.')
 
 parser.add_argument('-n', '--nprocesses', nargs='?', default='24',
-                    help='specify the number of processes to run at a time\ndefault = 24')
+                    help='specify the number of processes to run at a time\nDefault = 24')
 
 parser.add_argument('-ppn', '--procspernode', nargs='?', default='48',
-                    help='specify the number of processors per node in the cluster\ndefault = 48')
+                    help='specify the number of processors per node in the cluster\nDefault = 48')
 
 parser.add_argument('-N', '--Ncycles', nargs='?', default='1000',
-                    help='specify the number of cycles per GCMC calculation\ndefault = 1000')
+                    help='specify the number of cycles per GCMC calculation\nDefault = 1000')
 
 parser.add_argument('-t', '--type', nargs='?', default='grid',
-                    help='specify the type of simulation you want to run on the structures\ndefault = grid')
+                    help='specify the type of simulation you want to run on the structures\nDefault = grid')
 
 parser.add_argument('-r', '--radius', nargs='?', default='1.2',
-                    help='specify the radius of the probe in Zeo++ calculations\nExample: 1.2 angstrom')
+                    help='specify the radius of the probe in Zeo++ calculations\nDefault: 1.2 angstrom')
 
 parser.add_argument('-m', '--molecules', nargs='+', default=['xenon','krypton'],
-                    help='specify the adsorbent molecules\nExample: xenon krypton CO2')
+                    help='specify the adsorbent molecules\nExample: xenon krypton CO2.\nDefault=xenon krypton')
 
-parser.add_argument('-p', '--pressures', nargs='+', default=['100000'],
-                    help='specify the adsorbent molecules\nExample: xenon krypton CO2')
+parser.add_argument('-p', '--pressures', nargs='+', default=['101300'],
+                    help='specify the pressures in the simulation\nExample: xenon krypton CO2. Default=101300')
 
 parser.add_argument('-c', '--composition', nargs=2, default=None,
-                    help='specify the composition of each adsorbent molecule for coadsorption simulation\nExample: 90 10')
+                    help='specify the composition of each adsorbent molecule for coadsorption simulation\nExample: 90 10. Default=None')
 
 parser.add_argument('-pos', '--positions', nargs='?', default=None,
-                    help='specify a csv file with the coordinates of the adsorbents for single point simulations')
+                    help='specify a csv file with the coordinates of the adsorbents for single point simulations.\n Default=None')
 
 parser.add_argument('-o', '--output_directory', nargs='?', default='.',
-                    help='specify the directory in which you want the simulation files to be installed')
+                    help='specify the directory in which you want the simulation files to be installed. Default=. (current directory)')
 
 args = parser.parse_args()
 
