@@ -17,6 +17,8 @@ SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'po
 
 # TODO
 # Finish coad
+# Add timer inside run files and echo in a file to create a database of time spent per sim // 
+# can get it from output but more accurate (including preprocessing time)
 # Add single point simulation logic
 # Chain several sp sim
 # Move procs and procs_per_node to mp_run?
