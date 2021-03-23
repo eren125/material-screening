@@ -4,6 +4,7 @@ SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SOURCE_DIR)
 
 from time import time
+from textwrap import dedent
 import numpy as np
 import pandas as pd
 
@@ -97,8 +98,13 @@ class Screening():
             raise ValueError("Please specify a composition, for example: 20 80")
 
         if composition:
+            mole_fraction = [round(float(c)/100, 4) for c in composition]
             if sum([float(c) for c in composition]) != 100.0:
                 raise ValueError("Composition does not add up to 100%%")
+            if len(composition) > len(MOLECULES):
+                raise ValueError("More composition values than molecules specified")
+        else:
+            mole_fraction = []
 
         df_mol = pd.read_csv(os.path.join(SOURCE_DIR, '../data/molecules.csv'), encoding='utf-8')
         if not all([molecule in list(df_mol['MOLECULE']) for molecule in MOLECULES]):
@@ -129,38 +135,15 @@ class Screening():
             init_cycles = min(cycles // 2, 10000)
             ATOMS = ' '.join([mol2atoms[molecule] for molecule in MOLECULES])
             N_ATOMS = len(ATOMS.split())
-
-            self.generate_files(OUTPUT_PATH, type_, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
+            molecule_dict = {}
+            for i in range(len(mole_fraction)):
+                molecule_dict[MOLECULES[i]] = mole_fraction[i]
+            self.generate_files(OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
             CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0])
-
-            if type_ == "coad":
-                # loop over mole fractions and molecules
-                s = """
-                Component 0 MoleculeName                     MOLECULE_1
-                            MoleculeDefinition               TraPPE
-                            TranslationProbability           0.5
-                            IdentityChangeProbability        1.0
-                              NumberOfIdentityChanges        2
-                              IdentityChangesList            0 1
-                            SwapProbability                  1.0
-                            CreateNumberOfMolecules          0
-                            MolFraction                      Y_1
-
-
-                Component 1 MoleculeName                     MOLECULE_2
-                            MoleculeDefinition               TraPPE
-                            TranslationProbability           0.5
-                            IdentityChangeProbability        1.0
-                              NumberOfIdentityChanges        2
-                              IdentityChangesList            0 1
-                            SwapProbability                  1.0
-                            CreateNumberOfMolecules          0
-                            MolFraction                      Y_2
-                """
 
         print("%s simulation of %s"%(type_,' '.join(MOLECULES)))
 
-    def generate_files(self, path_to_work, type_, **kwargs):
+    def generate_files(self, path_to_work, type_, molecule_dict={}, **kwargs):
         """Generate the files need for the simulations
 
         Args:
@@ -174,6 +157,21 @@ class Screening():
                 os.mkdir(path_to_Scripts)
             path_to_INPUT = os.path.join(SOURCE_DIR, "../Raspa_screening_templates/INPUT_%s"%type_)
             INPUT_file = self.generate(path_to_INPUT, **kwargs)
+            if type_ == "coad":
+                index = 0
+                for key, value in molecule_dict.items():
+                    INPUT_file += dedent("""
+                    Component %d MoleculeName                     %s
+                                MoleculeDefinition               TraPPE
+                                TranslationProbability           0.5
+                                IdentityChangeProbability        1.0
+                                  NumberOfIdentityChanges        2
+                                  IdentityChangesList            0 1
+                                SwapProbability                  1.0
+                                CreateNumberOfMolecules          0
+                                MolFraction                      %s     
+                    """%(index,key,value))
+                    index += 1
             self.write_file(INPUT_file, os.path.join(path_to_work, "INPUT"))
             RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run"), "r").read()
             self.path_to_run = os.path.join(path_to_work,"run")
@@ -181,6 +179,7 @@ class Screening():
             if type_ != 'grid':
                 DATA_file = open(os.path.join(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_), "r").read()
                 self.write_file(DATA_file, os.path.join(path_to_work,"data.sh"))
+
         elif type_ in SIMULATION_TYPES["ZEO++"]:
             path_to_Output = os.path.join(path_to_work, 'Output')
             if not os.path.exists(path_to_Output):
