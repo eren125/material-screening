@@ -1,6 +1,6 @@
 #! /bin/bash
 node=$(hostname)
-source ${RASPASCREEN}/set_environment
+source ${MATSCREEN}/set_environment
 
 cd "$(dirname "$0")" 
 ${ZEO_DIR}/network -ha -vol ${2} ${2} NCYCLES Output/results_${1}_${2}.vol ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&
