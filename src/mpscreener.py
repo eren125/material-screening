@@ -17,7 +17,6 @@ SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'po
 
 
 # TODO
-# Finish coad
 # Add timer inside run files and echo in a file to create a database of time spent per sim // 
 # can get it from output but more accurate (including preprocessing time)
 # Add single point simulation logic
@@ -140,7 +139,8 @@ class Screening():
                 molecule_dict[MOLECULES[i]] = mole_fraction[i]
             self.generate_files(OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
             CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0])
-
+        self.OUTPUT_PATH = OUTPUT_PATH
+        pd.DataFrame({'Structures':[],"CPU_time (s)":[]}).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"), index=False)
         print("%s simulation of %s"%(type_,' '.join(MOLECULES)))
 
     def generate_files(self, path_to_work, type_, molecule_dict={}, **kwargs):
@@ -224,6 +224,7 @@ class Screening():
         """A module to run one simulation on a given node according to the current process id
         """
 
+        t0 = time()
         FRAMEWORK_NAME,UNITCELL = inputs
         if len(self.NODES) == 0:
             command = "bash %s %s \"%s\""%(self.path_to_run,FRAMEWORK_NAME,UNITCELL)
@@ -232,7 +233,10 @@ class Screening():
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             command = "ssh %s \"bash %s %s \\\"%s\\\"\""%(self.NODES[index],self.path_to_run,FRAMEWORK_NAME,UNITCELL)
-        return os.system(command)
+        os.system(command)
+        output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[round(time()-t0,6)]}
+        pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
+
 
     def mp_run(self):
         """Using multiprocessing, runs in parallel the simulations
