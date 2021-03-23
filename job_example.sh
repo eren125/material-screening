@@ -1,7 +1,7 @@
 #!/bin/bash
-export RASPASCREEN=/home/emmanuel/Documents/raspa-screener
+export MATSCREEN=/home/emmanuel/Documents/material-screening
 #export NODES=$(srun hostname | sort | uniq)
 #echo "Running on nodes:"
 #echo "${NODES}"
 
-python3 $RASPASCREEN/raspascreen.py -ppn 20 -n 20 -s $RASPASCREEN/data/structures_sample.csv -m xenon krypton -N 100000 -t grid 
+python3 $MATSCREEN/screen.py -ppn 20 -n 20 -s $MATSCREEN/data/structures_sample.csv -m xenon krypton -t grid 
