@@ -1,0 +1,27 @@
+SimulationType                MonteCarlo
+NumberOfCycles                0
+NumberOfInitializationCycles  0
+PrintPropertiesEvery          0
+RestartFile                   RESTART_MODE 
+
+Forcefield                    UFF
+
+Ensemble NVT
+
+Framework 0
+FrameworkName Arg
+UnitCells UNITCELL 
+ExternalTemperature 298.0
+ExternalPressure POINT_NUMBER
+
+NumberOfGrids 1
+ChargeMethod None
+GridTypes Xe
+SpacingVDWGrid 0.1
+UseTabularGrid yes
+CutOffVDW 12
+
+Component 0 MoleculeName                     xenon
+            MoleculeDefinition               TraPPE
+            CreateNumberOfMolecules          MOL_CREATION
+
