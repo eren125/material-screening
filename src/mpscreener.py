@@ -10,7 +10,7 @@ import pandas as pd
 
 import multiprocessing as mp
 
-SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'point'],
+SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp'],
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi']
                    }
@@ -172,7 +172,15 @@ class Screening():
                     """%(index,key,value))
                     index += 1
             self.write_file(INPUT_file, os.path.join(path_to_work, "INPUT"))
-            RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run"), "r").read()
+            if type_ == "sp":
+                if not os.path.exists(os.path.join(path_to_work, "Coordinates")):
+                    raise FileNotFoundError("Check that Coordinates/ directory exists and it is loaded with results from Voronoi simulations")
+                if not os.path.exists(os.path.join(path_to_work, "RestartInitial/System_0")):
+                    os.mkdir(os.path.join(path_to_work, "RestartInitial"))
+                    os.mkdir(os.path.join(path_to_work, "RestartInitial/System_0"))
+                RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run_%s"%type_), "r").read()
+            else:
+                RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run"), "r").read()
             self.path_to_run = os.path.join(path_to_work,"run")
             self.write_file(RUN_file, self.path_to_run)
             if type_ != 'grid':
@@ -183,6 +191,10 @@ class Screening():
             path_to_Output = os.path.join(path_to_work, 'Output')
             if not os.path.exists(path_to_Output):
                 os.mkdir(path_to_Output)
+            if type_ == "voronoi":
+                if not os.path.exists(os.path.join(path_to_work, 'Coordinates')):
+                    os.mkdir(os.path.join(path_to_work, 'Coordinates'))
+                os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Zeo++_screening_templates/extract_vertex.py"),path_to_work))
             RUN_file = open(os.path.join(SOURCE_DIR,"../Zeo++_screening_templates/run_%s"%type_), "r").read()
             self.path_to_run = os.path.join(path_to_work,"run")
             self.write_file(RUN_file, self.path_to_run)
