@@ -20,11 +20,11 @@ parser.add_argument('-f', '--forcefield', nargs='?', default="UFF",
 parser.add_argument('-s', '--structures', nargs='?', required=True,
                     help='specify the structures to screen in a csv file\nExample: structures_sample.csv\nThis csv file is required and has to contain "Structures" as a header name.')
 
-parser.add_argument('-n', '--nprocesses', nargs='?', default='24',
-                    help='specify the number of processes to run at a time\nDefault = 24')
+parser.add_argument('-n', '--nprocesses', nargs='?', required=True,
+                    help='specify the number of processes to run at a time')
 
-parser.add_argument('-ppn', '--procspernode', nargs='?', default='48',
-                    help='specify the number of processors per node in the cluster\nDefault = 48')
+parser.add_argument('-ppn', '--procspernode', nargs='?', required=True,
+                    help='specify the number of processors per node in the cluster')
 
 parser.add_argument('-N', '--Ncycles', nargs='?', default='1000',
                     help='specify the number of cycles per GCMC calculation\nDefault = 1000')
@@ -67,7 +67,8 @@ radius = float(args.radius)
 
 nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
-screen = Screening(structures_file, FORCE_FIELD, MOLECULES, nprocs, pressures=PRESSURES, OUTPUT_PATH=OUTPUT_PATH,probe_radius=radius, 
-         procs_per_node=ppn, type_=option, composition=COMPOSITION, cycles=CYCLES, positions=positions)
-
+# initialising the screening procedure
+screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, OUTPUT_PATH=OUTPUT_PATH,probe_radius=radius, 
+         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, positions=positions)
+# launching the screening
 screen.mp_run()

@@ -17,8 +17,8 @@ SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp
 
 
 class Screening():
-    def __init__(self, structures_file, force_field, MOLECULES, nprocs, pressures=[101300], temperature=298.0, cutoff=12, probe_radius=1.2, 
-    Threshold_volume=20, procs_per_node=48, type_='grid', OUTPUT_PATH=".", composition=None, positions=None, cycles=2000, setup=True):
+    def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
+    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, probe_radius=1.2, Threshold_volume=20, positions=None, OUTPUT_PATH=".", setup=True):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -27,24 +27,26 @@ class Screening():
         Args:
             structures_file    (str): relative path to the csv file containing all the structures, 
                                       the headers must contain "Structures"
+            procs_per_node     (int): number of processors available in each node for a given calculator
+            nprocs             (int): number of processes to be run at the same time
+            type_              (str): type of simulation the user wants to carry out. Currently available:
+                                      grid calculation via 'grid', GCMC via 'ads' 'coad', NVT MC via 'ent',
+                                      Widom's insertion via 'widom', helium void fraction via 'vf', 
+                                      Zeo++ via 'surface' 'volume' 'pore' 'channel' and global information via 'info'
             force_field        (str): force field used for the molecular simulations, 
                                       it must be defined in the Raspa directory 
             MOLECULES         (list): list of molecules (str) to be adsorbed on the materials
+            composition       (list): list of mole fractions for the molecules defined in MOLECULES
+                                      must have the same length as MOLECULES, and sum must equal to 1
             pressures         (list): list of pressures (float) in pascal to be simulated
-            nprocs             (int): number of processes to be run at the same time
-            OUTPUT_PATH        (str): relative path to where the outputs of the simulations will be printed
             TEMP             (float): temperature in kelvin for the Raspa2 simulations (default = 298.0 K)
+            cycles             (int): number of prodution cycles used for the Raspa2 simulations
+                                      equilibration cycles are fixed to 10k for now (to improve)                 
+            cutoff           (float): sets the van der Waals cutoff in Raspa2 simulation
             probe_radius     (float): radius of the probe in angström considered in Zeo++ simulations
             Threshold_volume (float): threshold at which the volume is considered too big for grid calculations
                                       it consumes too much RAM Memory for the machine currently used
-            procs_per_node     (int): number of processors available in each node for a given calculator
-            type_              (str): type of simulation the user wants to carry out. Currently available:
-                                      grid calculation via 'grid', GCMC via 'ads' 'coad', NVT MC via 'ent',
-                                      Widom's insertion via 'widom', helium void fraction via 'vf', Zeo++ via 'surface' 'volume' 'pore' 'channel' and global information via 'info'.
-            composition       (list): list of mole fractions for the molecules defined in MOLECULES
-                                      must have the same length as MOLECULES, and sum must equal to 1
-            cycles             (int): number of prodution cycles used for the Raspa2 simulations
-                                      equilibration cycles are fixed to 10k for now (to improve)
+            OUTPUT_PATH        (str): relative path to where the outputs of the simulations will be printed
             setup             (bool): boolean variable to determine whether to copy the input files 
                                       (obsolete in next version: the input will be parsed)
 
@@ -54,13 +56,14 @@ class Screening():
                                       it will then be set to an empty string by default
 
         self methods:
-            generate_files
-            generate
-            write_file
-            run   : function that takes the framework's name and the smallest unitcell for a 12 angstrom cut-off
-                    and runs the corresponding simulation according to the run bash file 
-            run_mp: function that calls `run` multiple times in parallel. mp.Pool distributes the jobs to $nprocs workers
-                    so that every job  
+            generate_files: generate the input and run files needed for the simulations according to the type_
+                            and replace some keywords with the variables given to the function
+            generate      : generate an input string according to the file specified
+            write_file    : print out a string in a file at the specified output path
+            run           : function that takes the framework's name and the smallest unitcell for a 12 angstrom cut-off
+                            and runs the corresponding simulation according to the run bash file 
+            run_mp        : function that calls `run` multiple times in parallel. mp.Pool distributes the jobs 
+                            to $nprocs workers so that every job  
         """
 
         ### Initialisation of class objects and error catching ###
@@ -144,7 +147,6 @@ class Screening():
             path_to_work (str): path to the working directory, where the simulations occur
         """
 
-        # create input
         if type_ in SIMULATION_TYPES['RASPA2']+SIMULATION_TYPES["INFO"]:
             path_to_Scripts = os.path.join(path_to_work, 'Scripts')
             if not os.path.exists(path_to_Scripts):
@@ -214,7 +216,7 @@ class Screening():
 
     @staticmethod
     def write_file(generated_file, outfile_path):
-        """Write 
+        """Write a given string in the path specified
 
         Args:
             generated_file (str): content of the generated file
