@@ -1,0 +1,28 @@
+#! /bin/bash
+node=$(hostname)
+source ${MATSCREEN}/set_environment
+cd "$(dirname "$0")"
+
+cp INPUT Scripts/simulation_${1}.input
+sed -i "s/Arg/${1}/g;s/UNITCELL/${2}/;s/POINT_NUMBER/0/;s/MOL_CREATION/1/;s/RESTART_MODE/no/" Scripts/simulation_${1}.input
+echo "${1} ${2} first Script DONE on $node"
+${RASPA_DIR}/bin/simulate -i Scripts/simulation_${1}.input > /dev/null 2>&1
+IFS=$'\n' read -d '' -r -a lines < Coordinates/${1}.csv
+len=${#lines[@]}
+for (( i=1; i<=$len; i++ ))
+do
+  line=(${lines[$i]})
+  cp INPUT Scripts/simulation_${1}.input
+  sed -i "s/Arg/${1}/g;s/UNITCELL/${2}/;s/POINT_NUMBER/$i/;s/MOL_CREATION/0/;s/RESTART_MODE/yes/" Scripts/simulation_${1}.input
+  file=$(ls Restart/System_0/restart_${1}_*_$((i-1)))
+  base=$(basename -- "${file}")
+  name=${base%_*}
+  cp ${file} RestartInitial/System_0/${name}_$i
+  sed -i "48s/.*/Adsorbate-atom-position: 0 0 ${line[0]} ${line[1]} ${line[2]}/" RestartInitial/System_0/${name}_$i
+  ${RASPA_DIR}/bin/simulate -i Scripts/simulation_${1}.input > /dev/null 2>&1
+  echo "${1} ${2} point number $i calculated"
+  rm RestartInitial/System_0/${name}_$i
+  rm $file
+done
+echo "${1} ${2} Simulation DONE on $node"
+rm Scripts/simulation_${1}.input
