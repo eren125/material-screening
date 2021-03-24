@@ -16,11 +16,6 @@ SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp
                    }
 
 
-# TODO
-# Add single point simulation logic
-# Chain several sp sim
-# Move procs and procs_per_node to mp_run?
-
 class Screening():
     def __init__(self, structures_file, force_field, MOLECULES, nprocs, pressures=[101300], temperature=298.0, cutoff=12, probe_radius=1.2, 
     Threshold_volume=20, procs_per_node=48, type_='grid', OUTPUT_PATH=".", composition=None, positions=None, cycles=2000, setup=True):
