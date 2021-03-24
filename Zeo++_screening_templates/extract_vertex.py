@@ -20,4 +20,3 @@ df = extract_vertex(struc)
 df.sort_values(by=['dist_to_nearest'], inplace = True)
 
 df.to_csv("Coordinates/"+struc+'.csv', index=False, sep=" ", encoding='utf-8')
-
