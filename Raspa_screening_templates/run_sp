@@ -24,5 +24,6 @@ do
   rm RestartInitial/System_0/${name}_$i
   rm $file
 done
+rm Restart/System_0/${name}_$i
 echo "${1} ${2} Simulation DONE on $node"
 rm Scripts/simulation_${1}.input
