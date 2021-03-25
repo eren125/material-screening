@@ -15,10 +15,12 @@ SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi']
                    }
 
+# TODO 
+# sp option using raspa is too slow is too slow > implementation of energy calculation using pymatgen
 
 class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
-    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, probe_radius=1.2, Threshold_volume=20, positions=None, OUTPUT_PATH=".", setup=True):
+    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH=".", setup=True):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -86,9 +88,6 @@ class Screening():
         if type_ not in available_types:
             raise ValueError(('%s not an option yet. Please choose between: ' +
                 ', '.join(['%s']*len(available_types))) % tuple([type_]+available_types))
-
-        if (type_=='point') and (not positions):
-            raise ValueError("Please specify the path to a csv file with positions. See examples in data/positions_sample.csv.")
 
         if (type_=='coad') and (not composition):
             raise ValueError("Please specify a composition, for example: 20 80")

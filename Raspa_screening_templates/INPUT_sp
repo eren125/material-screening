@@ -14,14 +14,14 @@ UnitCells UNITCELL
 ExternalTemperature 298.0
 ExternalPressure POINT_NUMBER
 
-NumberOfGrids 1
-ChargeMethod None
-GridTypes Xe
-SpacingVDWGrid 0.1
 UseTabularGrid yes
+NumberOfGrids N_atoms
+ChargeMethod None
+GridTypes ATOMS
+SpacingVDWGrid 0.1
 CutOffVDW 12
 
-Component 0 MoleculeName                     xenon
+Component 0 MoleculeName                     MOLECULE
             MoleculeDefinition               TraPPE
             CreateNumberOfMolecules          MOL_CREATION
 

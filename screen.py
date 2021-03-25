@@ -32,20 +32,23 @@ parser.add_argument('-N', '--Ncycles', nargs='?', default='1000',
 parser.add_argument('-t', '--type', nargs='?', default='grid',
                     help='specify the type of simulation you want to run on the structures\nDefault = grid')
 
-parser.add_argument('-r', '--radius', nargs='?', default='1.2',
-                    help='specify the radius of the probe in Zeo++ calculations\nDefault: 1.2 angstrom')
-
 parser.add_argument('-m', '--molecules', nargs='+', default=['xenon','krypton'],
                     help='specify the adsorbent molecules\nExample: xenon krypton CO2.\nDefault=xenon krypton')
+
+parser.add_argument('-T', '--Temperature', nargs='?', default=298.0,
+                    help='specify the temperature for the Raspa2 simulations \nDefault=298.0')
 
 parser.add_argument('-p', '--pressures', nargs='+', default=['101300'],
                     help='specify the pressures in the simulation\nExample: xenon krypton CO2. Default=101300')
 
+parser.add_argument('-C', '--Cutoff', nargs=2, default=12,
+                    help='specify the cut-off of the Raspa2 simulations\nDefault=12')
+
 parser.add_argument('-c', '--composition', nargs=2, default=None,
                     help='specify the composition of each adsorbent molecule for coadsorption simulation\nExample: 90 10. Default=None')
 
-parser.add_argument('-pos', '--positions', nargs='?', default=None,
-                    help='specify a csv file with the coordinates of the adsorbents for single point simulations.\n Default=None')
+parser.add_argument('-r', '--radius', nargs='?', default='1.2',
+                    help='specify the radius of the probe in Zeo++ calculations\nDefault: 1.2 angstrom')
 
 parser.add_argument('-o', '--output_directory', nargs='?', default='.',
                     help='specify the directory in which you want the simulation files to be installed. Default=. (current directory)')
@@ -59,6 +62,8 @@ option = args.type
 MOLECULES = args.molecules
 OUTPUT_PATH = args.output_directory
 PRESSURES = args.pressures
+temperature = float(args.Temperature)
+cutoff = float(args.cutoff)
 
 CYCLES = int(args.Ncycles)
 COMPOSITION = args.composition
@@ -68,7 +73,7 @@ radius = float(args.radius)
 nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
 # initialising the screening procedure
-screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, OUTPUT_PATH=OUTPUT_PATH,probe_radius=radius, 
-         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, positions=positions)
+screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperature=temperature, cutoff=cutoff,probe_radius=radius, 
+         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH)
 # launching the screening
 screen.mp_run()
