@@ -10,10 +10,6 @@ import pandas as pd
 
 import multiprocessing as mp
 
-SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp'],
-                    "INFO"   : ['info'],
-                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi']
-                   }
 
 # TODO 
 # sp option using raspa is too slow is too slow > implementation of energy calculation using pymatgen
@@ -69,6 +65,11 @@ class Screening():
         """
 
         ### Initialisation of class objects and error catching ###
+        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp'],
+                    "INFO"   : ['info'],
+                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi'],
+                    "HOME"   : ['sample'] 
+                   }
         try:
             self.NODES = os.environ['NODES']
         except:
@@ -83,8 +84,8 @@ class Screening():
         self.nprocs = nprocs
 
         available_types = []
-        for key in SIMULATION_TYPES.keys():
-            available_types += SIMULATION_TYPES[key]
+        for key in self.SIMULATION_TYPES.keys():
+            available_types += self.SIMULATION_TYPES[key]
         if type_ not in available_types:
             raise ValueError(('%s not an option yet. Please choose between: ' +
                 ', '.join(['%s']*len(available_types))) % tuple([type_]+available_types))
@@ -113,17 +114,20 @@ class Screening():
         df_structures = df_structures[['Structures']]
         df_structures['STRUCTURE_NAME'] = df_structures['Structures'].str.replace('.cif','')
         
-        if type_ in SIMULATION_TYPES['INFO']:
+        if type_ in self.SIMULATION_TYPES['INFO']:
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
-        elif type_ in SIMULATION_TYPES['RASPA2']+SIMULATION_TYPES['ZEO++']:
+        elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']:
             df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8') 
             df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME','UnitCell','Volume [nm^3]']],how="inner", on="STRUCTURE_NAME")
             df = df[df['Volume [nm^3]'] <= Threshold_volume]    
-            if type_ in SIMULATION_TYPES['RASPA2']:
+            if type_ in self.SIMULATION_TYPES['RASPA2']:
                 self.data = df[['STRUCTURE_NAME','UnitCell']].to_records(index=False)
             else:
                 df['ProbeRadius'] = probe_radius
                 self.data = df[['STRUCTURE_NAME','ProbeRadius']].to_records(index=False)
+        elif type_ in self.SIMULATION_TYPES['HOME']:
+            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8') 
+            #TODO add matrix information as an np.array
 
         if setup==True:
             print_every = cycles // 10
@@ -146,13 +150,13 @@ class Screening():
             path_to_work (str): path to the working directory, where the simulations occur
         """
 
-        if type_ in SIMULATION_TYPES['RASPA2']+SIMULATION_TYPES["INFO"]:
+        if type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES["INFO"]:
             path_to_Scripts = os.path.join(path_to_work, 'Scripts')
             if not os.path.exists(path_to_Scripts):
                 os.mkdir(path_to_Scripts)
             path_to_INPUT = os.path.join(SOURCE_DIR, "../Raspa_screening_templates/INPUT_%s"%type_)
             INPUT_file = self.generate(path_to_INPUT, **kwargs)
-            if type_ == "coad":
+            if type_ == 'coad':
                 index = 0
                 for key, value in molecule_dict.items():
                     INPUT_file += dedent("""
@@ -168,7 +172,7 @@ class Screening():
                     """%(index,key,value))
                     index += 1
             self.write_file(INPUT_file, os.path.join(path_to_work, "INPUT"))
-            if type_ == "sp":
+            if type_ == 'sp' or type_ == 'sample':
                 if not os.path.exists(os.path.join(path_to_work, "Coordinates")):
                     raise FileNotFoundError("Check that Coordinates/ directory exists and it is loaded with results from Voronoi simulations")
                 if not os.path.exists(os.path.join(path_to_work, "RestartInitial/System_0")):
@@ -182,8 +186,10 @@ class Screening():
             if type_ != 'grid':
                 DATA_file = open(os.path.join(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_), "r").read()
                 self.write_file(DATA_file, os.path.join(path_to_work,"data.sh"))
+                if type_ == 'info':
+                    os.system("cp %s %s"%(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/merge_info.py"), os.path.join(path_to_work,"merge_info.py")))
 
-        elif type_ in SIMULATION_TYPES["ZEO++"]:
+        elif type_ in self.SIMULATION_TYPES["ZEO++"]:
             path_to_Output = os.path.join(path_to_work, 'Output')
             if not os.path.exists(path_to_Output):
                 os.mkdir(path_to_Output)
@@ -194,6 +200,10 @@ class Screening():
             RUN_file = open(os.path.join(SOURCE_DIR,"../Zeo++_screening_templates/run_%s"%type_), "r").read()
             self.path_to_run = os.path.join(path_to_work,"run")
             self.write_file(RUN_file, self.path_to_run)
+
+        elif type_ in self.SIMULATION_TYPES["HOME"]:
+            # TODO create a dataframe and csv file (temp) to append to
+            pass
 
 
     @staticmethod
@@ -245,11 +255,24 @@ class Screening():
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
 
 
-    def mp_run(self):
+    def run_home(self, structure_name, unitcell, box_matrix):
+        """Runs calculations using a homemade python algorithm based on pymatgen
+        """
+        # TODO relationship with ljsampler.py
+        pass
+
+
+    def mp_run(self, from_file=True):
         """Using multiprocessing, runs in parallel the simulations
         """
-
-        t0 = time()
-        with mp.Pool(processes=self.nprocs) as p:
-            p.map(self.run, [(FRAMEWORK_NAME,UNITCELL) for FRAMEWORK_NAME,UNITCELL in self.data])
-        print("SIMULATIONS COMPLETED after %.2f hour(s)"%((time()-t0)/3600))
+        if from_file:
+            t0 = time()
+            with mp.Pool(processes=self.nprocs) as p:
+                p.map(self.run, [(FRAMEWORK_NAME,UNITCELL) for FRAMEWORK_NAME,UNITCELL in self.data])
+            print("SIMULATIONS COMPLETED after %.2f hour(s)"%((time()-t0)/3600))
+        else:
+            t0 = time()
+            with mp.Pool(processes=self.nprocs) as p:
+                p.map(self.run_home, [(structure_name, unitcell, box_matrix) for structure_name, unitcell, box_matrix in self.data])
+            #TODO print ordered csv file at the end
+            print("SIMULATIONS COMPLETED after %.2f hour(s)"%((time()-t0)/3600))
