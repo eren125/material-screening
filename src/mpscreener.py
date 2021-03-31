@@ -1,18 +1,20 @@
 import sys
 import os
-SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(SOURCE_DIR)
-
 from time import time
 from textwrap import dedent
+import multiprocessing as mp
+
 import numpy as np
 import pandas as pd
 
-import multiprocessing as mp
+SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(SOURCE_DIR)
+
+from ljsampler import load_coordinates
 
 
 # TODO 
-# sp option using raspa is too slow is too slow > implementation of energy calculation using pymatgen
+# implementation of energy calculation using pymatgen
 
 class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
@@ -126,7 +128,8 @@ class Screening():
                 df['ProbeRadius'] = probe_radius
                 self.data = df[['STRUCTURE_NAME','ProbeRadius']].to_records(index=False)
         elif type_ in self.SIMULATION_TYPES['HOME']:
-            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8') 
+            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8')
+
             #TODO add matrix information as an np.array
 
         if setup==True:
@@ -203,6 +206,7 @@ class Screening():
 
         elif type_ in self.SIMULATION_TYPES["HOME"]:
             # TODO create a dataframe and csv file (temp) to append to
+            self.df_home = pd.DataFrame(columns={"STRUCTURE_NAME":[], })
             pass
 
 
