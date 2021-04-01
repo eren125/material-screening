@@ -10,15 +10,13 @@ import pandas as pd
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SOURCE_DIR)
 
-from ljsampler import load_coordinates
-
 
 # TODO 
 # implementation of energy calculation using pymatgen
 
 class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
-    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH=".", setup=True):
+    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH="."):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -47,8 +45,6 @@ class Screening():
             Threshold_volume (float): threshold at which the volume is considered too big for grid calculations
                                       it consumes too much RAM Memory for the machine currently used
             OUTPUT_PATH        (str): relative path to where the outputs of the simulations will be printed
-            setup             (bool): boolean variable to determine whether to copy the input files 
-                                      (obsolete in next version: the input will be parsed)
 
         self variables:
             NODES              (str): names of the nodes allocated by the supercalculator
@@ -85,9 +81,7 @@ class Screening():
                 raise ValueError('More processes at a time than proccessors available!!!')
         self.nprocs = nprocs
 
-        available_types = []
-        for key in self.SIMULATION_TYPES.keys():
-            available_types += self.SIMULATION_TYPES[key]
+        available_types = sum(self.SIMULATION_TYPES.values(), [])
         if type_ not in available_types:
             raise ValueError(('%s not an option yet. Please choose between: ' +
                 ', '.join(['%s']*len(available_types))) % tuple([type_]+available_types))
@@ -112,39 +106,46 @@ class Screening():
         if not all([M in list(df_mol['MOLECULE']) for M in MOLECULES]):
             raise ValueError("The molecules mentioned are not supported by the code, see the data directory in the source directory")
 
+        print_every = cycles // 10
+        init_cycles = min(cycles // 2, 10000)
+        ATOMS = ' '.join([mol2atoms[molecule] for molecule in MOLECULES])
+        N_ATOMS = len(ATOMS.split())
+        molecule_dict = {}
+        for i in range(len(mole_fraction)):
+            molecule_dict[MOLECULES[i]] = mole_fraction[i]
+        self.generate_files(OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
+        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0])
+
         df_structures = pd.read_csv(structures_file, encoding='utf-8')
         df_structures = df_structures[['Structures']]
         df_structures['STRUCTURE_NAME'] = df_structures['Structures'].str.replace('.cif','')
         
+        self.home = False
         if type_ in self.SIMULATION_TYPES['INFO']:
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
-        elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']:
+        elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']:
             df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8') 
-            df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME','UnitCell','Volume [nm^3]']],how="inner", on="STRUCTURE_NAME")
+            df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="inner", on="STRUCTURE_NAME")
             df = df[df['Volume [nm^3]'] <= Threshold_volume]    
             if type_ in self.SIMULATION_TYPES['RASPA2']:
                 self.data = df[['STRUCTURE_NAME','UnitCell']].to_records(index=False)
-            else:
+            elif type_ in self.SIMULATION_TYPES['ZEO++']:
                 df['ProbeRadius'] = probe_radius
                 self.data = df[['STRUCTURE_NAME','ProbeRadius']].to_records(index=False)
-        elif type_ in self.SIMULATION_TYPES['HOME']:
-            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8')
+            elif type_ in self.SIMULATION_TYPES['HOME']:
+                self.atoms = '|'.join([mol2atoms[molecule] for molecule in MOLECULES])
+                self.forcefield = force_field
+                self.temperature = temperature
+                self.cutoff = cutoff
+                df['supercell_wrap'] = df['UnitCell'].apply(lambda x: x.replace(' ','|'))
+                df['lattice_matrix_wrap'] = df.apply(lambda x: ' '.join([x['unit vector a'],x['unit vector b'],x['unit vector c']]).replace(' ','|'), axis=1)
+                self.data = df[['STRUCTURE_NAME','supercell_wrap','lattice_matrix_wrap']].to_records(index=False)
+                self.home = True
 
-            #TODO add matrix information as an np.array
-
-        if setup==True:
-            print_every = cycles // 10
-            init_cycles = min(cycles // 2, 10000)
-            ATOMS = ' '.join([mol2atoms[molecule] for molecule in MOLECULES])
-            N_ATOMS = len(ATOMS.split())
-            molecule_dict = {}
-            for i in range(len(mole_fraction)):
-                molecule_dict[MOLECULES[i]] = mole_fraction[i]
-            self.generate_files(OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
-            CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0])
         self.OUTPUT_PATH = OUTPUT_PATH
         pd.DataFrame({'Structures':[],"CPU_time (s)":[]}).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"), index=False)
         print("%s simulation of %s"%(type_,' '.join(MOLECULES)))
+
 
     def generate_files(self, path_to_work, type_, molecule_dict={}, **kwargs):
         """Generate the files need for the simulations
@@ -205,9 +206,9 @@ class Screening():
             self.write_file(RUN_file, self.path_to_run)
 
         elif type_ in self.SIMULATION_TYPES["HOME"]:
-            # TODO create a dataframe and csv file (temp) to append to
-            self.df_home = pd.DataFrame(columns={"STRUCTURE_NAME":[], })
-            pass
+            os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Home_screening_templates/run.py"),path_to_work))
+            self.path_to_run = os.path.join(path_to_work,"run.py")
+            pd.DataFrame(columns={"Structure_name":[], "Adsorbent_name":[], "Acessible_average_energy":[], "Minimum_energy":[], "Boltzmann_average_energy":[]}).to_csv('home_output.csv',index=False)
 
 
     @staticmethod
@@ -253,30 +254,43 @@ class Screening():
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
-            command = "ssh %s \"bash %s %s \\\"%s\\\"\""%(self.NODES[index],self.path_to_run,FRAMEWORK_NAME,UNITCELL)
+            HOST = self.NODES[index]
+            command = "ssh %s \"python3 %s %s \\\"%s\\\"\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL)
         os.system(command)
-        output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[round(time()-t0,6)]}
+        output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
 
 
-    def run_home(self, structure_name, unitcell, box_matrix):
+    def run_home(self, inputs):
         """Runs calculations using a homemade python algorithm based on pymatgen
         """
-        # TODO relationship with ljsampler.py
-        pass
+
+        t0 = time()
+        structure_name, supercell_wrap, lattice_matrix_wrap = inputs
+        if len(self.NODES) == 0:
+            command = "python3 %s \"%s\" %s %s %s %s \"%s\" \"%s\""%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap, lattice_matrix_wrap)
+            print(command)
+        else:
+            worker = int(mp.current_process()._identity[0])
+            nnode = len(self.NODES)
+            index = (worker-1)%nnode
+            HOST = self.NODES[index]
+            command = "ssh %s \"python3 %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \\\"%s\\\"\""%(HOST,self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap, lattice_matrix_wrap)
+        os.system(command)
+        output_dict = {'Structures':[structure_name], "CPU_time (s)":[int(time()-t0)]}
+        pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
 
 
-    def mp_run(self, from_file=True):
+    def mp_run(self):
         """Using multiprocessing, runs in parallel the simulations
         """
-        if from_file:
-            t0 = time()
+        t0 = time()
+
+        if self.home:
+            with mp.Pool(processes=self.nprocs) as p:
+                p.map(self.run_home, [(structure_name, supercell_wrap, lattice_matrix_wrap) for structure_name, supercell_wrap, lattice_matrix_wrap in self.data])
+        else: # homemade simulations
             with mp.Pool(processes=self.nprocs) as p:
                 p.map(self.run, [(FRAMEWORK_NAME,UNITCELL) for FRAMEWORK_NAME,UNITCELL in self.data])
-            print("SIMULATIONS COMPLETED after %.2f hour(s)"%((time()-t0)/3600))
-        else:
-            t0 = time()
-            with mp.Pool(processes=self.nprocs) as p:
-                p.map(self.run_home, [(structure_name, unitcell, box_matrix) for structure_name, unitcell, box_matrix in self.data])
-            #TODO print ordered csv file at the end
-            print("SIMULATIONS COMPLETED after %.2f hour(s)"%((time()-t0)/3600))
+
+        print("SIMULATIONS COMPLETED after %.2f hour(s)"%((time()-t0)/3600))
