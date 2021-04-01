@@ -63,11 +63,10 @@ MOLECULES = args.molecules
 OUTPUT_PATH = args.output_directory
 PRESSURES = args.pressures
 temperature = float(args.Temperature)
-cutoff = float(args.cutoff)
+cutoff = float(args.Cutoff)
 
 CYCLES = int(args.Ncycles)
 COMPOSITION = args.composition
-positions = args.positions
 radius = float(args.radius)
 
 nprocs = int(args.nprocesses)
