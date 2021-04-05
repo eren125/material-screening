@@ -10,9 +10,8 @@ import pandas as pd
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SOURCE_DIR)
 
-
 # TODO 
-# implementation of energy calculation using pymatgen
+
 
 class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
@@ -73,6 +72,10 @@ class Screening():
         except:
             self.NODES = ''
         self.NODES = self.NODES.split()
+        try:
+            os.system("source %s/set_environment"%SOURCE_DIR)
+        except:
+            raise FileNotFoundError("Please check your set_environement file in %s"%SOURCE_DIR)
         if len(self.NODES)==0:
             if procs_per_node > nprocs:
                 raise ValueError('More processes at a time than proccessors available!!!')
@@ -113,10 +116,14 @@ class Screening():
         molecule_dict = {}
         for i in range(len(mole_fraction)):
             molecule_dict[MOLECULES[i]] = mole_fraction[i]
-        self.generate_files(OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
+        
+        current_directory = os.environ['CURRENTDIR']
+        self.OUTPUT_PATH = os.path.join(current_directory, OUTPUT_PATH)
+
+        self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
         CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0])
 
-        df_structures = pd.read_csv(structures_file, encoding='utf-8')
+        df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
         df_structures = df_structures[['Structures']]
         df_structures['STRUCTURE_NAME'] = df_structures['Structures'].str.replace('.cif','')
         
@@ -142,7 +149,6 @@ class Screening():
                 self.data = df[['STRUCTURE_NAME','supercell_wrap','lattice_matrix_wrap']].to_records(index=False)
                 self.home = True
 
-        self.OUTPUT_PATH = OUTPUT_PATH
         pd.DataFrame({'Structures':[],"CPU_time (s)":[]}).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"), index=False)
         print("%s simulation of %s"%(type_,' '.join(MOLECULES)))
 
@@ -255,7 +261,7 @@ class Screening():
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s \"python3 %s %s \\\"%s\\\"\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL)
+            command = "ssh %s \"bash %s %s \\\"%s\\\"\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL)
         os.system(command)
         output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
