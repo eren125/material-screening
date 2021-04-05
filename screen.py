@@ -3,9 +3,6 @@ import argparse
 import textwrap
 from src.mpscreener import Screening
 
-# TODO
-# Add temperature and cutoff as options
-
 parser = argparse.ArgumentParser(
     description=textwrap.dedent('''\
          This is a python based command line tool to run screening simulations on a given set of processors available
