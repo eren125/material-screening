@@ -32,13 +32,12 @@ class load_coordinates():
         if not os.path.exists("Energies"):
             os.mkdir("Energies")
 
-    def evaluate(self, structure_name, supercell, lattice_matrix, min_distance=2.0, precision=2):
+    def evaluate(self, structure_name, supercell, min_distance=2.7, energy_precision=2, energy_threshold=0.00):
         """Calculates the average energies/ minimum energy/ boltzmann average energies/ list of energies
 
         Args:
             structure_name (str): name of the structure as referenced in the cif file in the Raspa directory
             supercell (list): list of ints representing the size of each unicell vector for the supercell
-            lattice_matrix (numpy.2Darray): 3x3 array representing the unitcell vectors in the cartesian coordinate 
             system of Raspa2 and Zeo++ (different from the one used in pymatgen)
         
         Returns:
@@ -50,6 +49,8 @@ class load_coordinates():
         if os.path.exists(coord_path):
             df_voro = pd.read_csv(coord_path, sep=" ")
             df_voro = df_voro[df_voro["dist_to_nearest"]>min_distance]
+            if len(df_voro)==0:
+                return np.nan, np.nan, np.nan
             cif_file = open(os.path.join(self.RASPA_DIR,'share/raspa/structures/cif',structure_name+".cif"),"r").read()
 
             if '_atom_site_label' in cif_file:
@@ -63,22 +64,34 @@ class load_coordinates():
                     raise KeyError("_atom_site_type_symbol and _atom_site_label not in the cif file, please check the format")
 
             parser = CifParser.from_string(cif_file)
-            structure = parser.get_structures()[0]
+            structure = parser.get_structures(primitive=False)[0]
             structure.make_supercell(supercell)
-            df_voro["cartesian_coordinates"] = df_voro.apply(lambda row: np.array([float(row.x),float(row.y),float(row.z)]), axis=1)
+
+            a, b, c = structure.lattice.abc
+            alpha, beta, gamma = structure.lattice.angles
+            alpha = np.pi*alpha/180
+            beta = np.pi*beta/180
+            gamma = np.pi*gamma/180
+            n = ( np.cos(alpha) - np.cos(gamma)*np.cos(beta) ) / np.sin(gamma)
+            lattice_matrix = np.array([
+                [a, round(b*np.cos(gamma),12), round(c*np.cos(beta),12)],
+                [0.0, round(b*np.sin(gamma),12), round(c*n,12)],
+                [0.0, 0.0, round(c*np.sqrt(np.sin(beta)**2 - n**2),12)] ])
             inv_lattice_matrix = np.linalg.inv(lattice_matrix)
+
+            df_voro["cartesian_coordinates"] = df_voro.apply(lambda row: np.array([float(row.x),float(row.y),float(row.z)]), axis=1)
             df_voro["fractional_coordinates"] = df_voro["cartesian_coordinates"].apply(lambda coord: np.matmul(inv_lattice_matrix, np.array(coord)))
 
             accessible_mean_energy, min_energy, boltz_energy = [], [], []
             for molecule in self.atoms:
                 df_voro["pymat_site_%s"%molecule] = df_voro["fractional_coordinates"].apply(lambda frac_coord: PeriodicSite({molecule:1}, frac_coord, structure.lattice))
                 df_voro["Energy_%s"%molecule] = df_voro["pymat_site_%s"%molecule].apply(lambda site: self.lennard_jones(site, structure, self.cutoff))
-                accessible_mean_energy.append( round(df_voro[df_voro["Energy_%s"%molecule]<0]["Energy_%s"%molecule].mean(), precision) )
-                min_energy.append( round(df_voro["Energy_%s"%molecule].min(), precision) )
+                accessible_mean_energy.append( round(df_voro[df_voro["Energy_%s"%molecule]<energy_threshold]["Energy_%s"%molecule].mean(), energy_precision) )
+                min_energy.append( round(df_voro["Energy_%s"%molecule].min(), energy_precision) )
                 df_voro["exp_energy_%s"%molecule] = np.exp(-df_voro["Energy_%s"%molecule]/(self.R*self.temperature))
                 Sum_exp = df_voro["exp_energy_%s"%molecule].sum()
                 df_voro["pond_energy_%s"%molecule] = df_voro["exp_energy_%s"%molecule] * df_voro["Energy_%s"%molecule] / Sum_exp
-                boltz_energy.append( round(df_voro["pond_energy_%s"%molecule].sum(), precision) )
+                boltz_energy.append( round(df_voro["pond_energy_%s"%molecule].sum(), energy_precision) )
             df_voro.to_csv('Energies/%s.csv'%structure_name)
             return accessible_mean_energy, min_energy, boltz_energy
         else:

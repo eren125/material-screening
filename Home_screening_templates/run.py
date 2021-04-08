@@ -17,11 +17,11 @@ lj_sampler = load_coordinates(ATOMS, forcefield=Args[2], temperature=float(Args[
 
 structure_name = Args[5]
 supercell = [int(c) for c in Args[6].split('|')]
-lattice_wrap = np.array(Args[7].split('|')).astype(float)
-lattice_matrix = np.array( [supercell[0]*lattice_wrap[:3],supercell[1]*lattice_wrap[3:6],supercell[2]*lattice_wrap[6:9]] )
+# lattice_wrap = np.array(Args[7].split('|')).astype(float)
+# lattice_matrix = np.array( [supercell[0]*lattice_wrap[:3],supercell[1]*lattice_wrap[3:6],supercell[2]*lattice_wrap[6:9]] )
 # example: 5.5673|0|0|0|11.8214|-2.7277|0|0|22.38955
 
-accessible_mean_energy, min_energy, boltz_energy = lj_sampler.evaluate(structure_name, supercell, lattice_matrix)
+accessible_mean_energy, min_energy, boltz_energy = lj_sampler.evaluate(structure_name, supercell)
 
 pd.DataFrame({"Structure_name":N_atoms*[structure_name], "Adsorbent_name":ATOMS, "Acessible_average_energy":accessible_mean_energy, "Minimum_energy":min_energy, "Boltzmann_average_energy":boltz_energy}).to_csv("home_output.csv", index=False, header=False, mode='a')
 

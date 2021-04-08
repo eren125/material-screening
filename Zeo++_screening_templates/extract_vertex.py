@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np 
 
 struc = sys.argv[1]
-DIST_THRESHOLD = 2.7
+DIST_THRESHOLD = 2.0
 
 def extract_vertex(structure):
     f = open("Output/%s.nt2"%structure,'r')

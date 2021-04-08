@@ -73,7 +73,7 @@ class Screening():
             self.NODES = ''
         self.NODES = self.NODES.split()
         try:
-            os.system("source %s/set_environment"%SOURCE_DIR)
+            os.system("source %s/../set_environment"%SOURCE_DIR)
         except:
             raise FileNotFoundError("Please check your set_environement file in %s"%SOURCE_DIR)
         if len(self.NODES)==0:
@@ -145,8 +145,7 @@ class Screening():
                 self.temperature = temperature
                 self.cutoff = cutoff
                 df['supercell_wrap'] = df['UnitCell'].apply(lambda x: x.replace(' ','|'))
-                df['lattice_matrix_wrap'] = df.apply(lambda x: ' '.join([x['unit vector a'],x['unit vector b'],x['unit vector c']]).replace(' ','|'), axis=1)
-                self.data = df[['STRUCTURE_NAME','supercell_wrap','lattice_matrix_wrap']].to_records(index=False)
+                self.data = df[['STRUCTURE_NAME','supercell_wrap']].to_records(index=False)
                 self.home = True
 
         pd.DataFrame({'Structures':[],"CPU_time (s)":[]}).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"), index=False)
@@ -272,16 +271,16 @@ class Screening():
         """
 
         t0 = time()
-        structure_name, supercell_wrap, lattice_matrix_wrap = inputs
+        structure_name, supercell_wrap = inputs
         if len(self.NODES) == 0:
-            command = "python3 %s \"%s\" %s %s %s %s \"%s\" \"%s\""%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap, lattice_matrix_wrap)
+            command = "python3 %s \"%s\" %s %s %s %s \"%s\" "%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
             print(command)
         else:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s \"python3 %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \\\"%s\\\"\""%(HOST,self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap, lattice_matrix_wrap)
+            command = "ssh %s \"python3 %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \""%(HOST,self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
         os.system(command)
         output_dict = {'Structures':[structure_name], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
@@ -294,7 +293,7 @@ class Screening():
 
         if self.home:
             with mp.Pool(processes=self.nprocs) as p:
-                p.map(self.run_home, [(structure_name, supercell_wrap, lattice_matrix_wrap) for structure_name, supercell_wrap, lattice_matrix_wrap in self.data])
+                p.map(self.run_home, [(structure_name, supercell_wrap) for structure_name, supercell_wrap in self.data])
         else: # homemade simulations
             with mp.Pool(processes=self.nprocs) as p:
                 p.map(self.run, [(FRAMEWORK_NAME,UNITCELL) for FRAMEWORK_NAME,UNITCELL in self.data])
