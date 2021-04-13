@@ -13,7 +13,6 @@ class load_coordinates():
             forcefield (str): the force field name used for the energy calculation (need to be specified in the raspa directory)
             temperature (float): the temperature used for the simulation
             cutoff (float): the cutoff used in the energy calculation (12 angstrom is the default)
-
         """
 
         self.RASPA_DIR = os.environ['RASPA_DIR']
@@ -32,7 +31,8 @@ class load_coordinates():
         if not os.path.exists("Energies"):
             os.mkdir("Energies")
 
-    def evaluate(self, structure_name, supercell, min_distance=2.7, energy_precision=2, energy_threshold=0.00):
+
+    def evaluate(self, structure_name, supercell, min_distance=2.0, energy_precision=6, energy_threshold=0.00, numpy_array=False):
         """Calculates the average energies/ minimum energy/ boltzmann average energies/ list of energies
 
         Args:
@@ -41,8 +41,6 @@ class load_coordinates():
             system of Raspa2 and Zeo++ (different from the one used in pymatgen)
         
         Returns:
-
-
         """
 
         coord_path = os.path.join("Coordinates",structure_name+'.csv')
@@ -85,7 +83,10 @@ class load_coordinates():
             accessible_mean_energy, min_energy, boltz_energy = [], [], []
             for molecule in self.atoms:
                 df_voro["pymat_site_%s"%molecule] = df_voro["fractional_coordinates"].apply(lambda frac_coord: PeriodicSite({molecule:1}, frac_coord, structure.lattice))
-                df_voro["Energy_%s"%molecule] = df_voro["pymat_site_%s"%molecule].apply(lambda site: self.lennard_jones(site, structure, self.cutoff))
+                if numpy_array:
+                    df_voro["Energy_%s"%molecule] = df_voro["pymat_site_%s"%molecule].apply(lambda site: self.lennard_jones_np(site, structure, self.cutoff))
+                else:
+                    df_voro["Energy_%s"%molecule] = df_voro["pymat_site_%s"%molecule].apply(lambda site: self.lennard_jones(site, structure, self.cutoff))
                 accessible_mean_energy.append( round(df_voro[df_voro["Energy_%s"%molecule]<energy_threshold]["Energy_%s"%molecule].mean(), energy_precision) )
                 min_energy.append( round(df_voro["Energy_%s"%molecule].min(), energy_precision) )
                 df_voro["exp_energy_%s"%molecule] = np.exp(-df_voro["Energy_%s"%molecule]/(self.R*self.temperature))
@@ -98,6 +99,45 @@ class load_coordinates():
             return np.nan,np.nan,np.nan
 
 
+    def surface_sampling(self):
+        """A function to sample the accessible surfaces and calculate the energies associated
+        """
+        pass
+
+
+    # Not faster.. Too much looping to define the arrays maybe
+    def lennard_jones_np(self, atom_g, structure_h, cutoff, shifted=True):
+        """Calculates the VdW interaction using a LJ potential
+
+        Args:
+            atom_g (pymatgen.core.PeriodicSite): element type of the guest atom
+            structure_h (pymatgen.core.Structure): element type of the host atom
+            distance (float): distance between the atoms
+            df_FF (pd.DF): a pandas DataFrame giving the LJ parameters of the corresponding force field
+
+        Returns:
+            Lennard Jones Interaction Energy in K according to the LJ parameters of df_FF
+        """
+
+        shift = 0
+        row_g = self.df_FF[self.df_FF['atom type'] == atom_g.specie.symbol]
+        epsilon_g = row_g['epsilon'].iloc[0]
+        sigma_g = row_g['sigma'].iloc[0]
+        neighbors = structure_h.get_neighbors(atom_g, cutoff)
+
+        matrix = np.array([[atom_g.distance(atom_h), self.df_FF[self.df_FF['atom type'].str.strip('_') == atom_h.specie.symbol]['epsilon'].iloc[0], self.df_FF[self.df_FF['atom type'].str.strip('_') == atom_h.specie.symbol]['sigma'].iloc[0]] for atom_h in neighbors])
+
+        epsilon = np.sqrt(epsilon_g * matrix[:,1])
+        sigma = (sigma_g + matrix[:,2]) / 2
+
+        E = np.sum( 4 * epsilon * ( (sigma / matrix[:,0])**12 - (sigma / matrix[:,0])**6 ) )
+        if shifted:
+            shift = np.sum( 4 * epsilon * ( (sigma / cutoff)**12 - (sigma / cutoff)**6 ) )
+        return self.R * (E - shift)
+
+
+
+# TODO can be improved by numpy arrays instead of for loops
     def lennard_jones(self, atom_g, structure_h, cutoff, shifted=True):
         """Calculates the VdW interaction using a LJ potential
 
@@ -109,7 +149,6 @@ class load_coordinates():
 
         Returns:
             Lennard Jones Interaction Energy in K according to the LJ parameters of df_FF
-
         """
 
         E = 0.0
@@ -118,14 +157,11 @@ class load_coordinates():
         neighbors = structure_h.get_neighbors(atom_g, cutoff)
         for atom_h in neighbors:
             distance = atom_h.distance(atom_g)
-            if  distance < cutoff:
-                row_h = self.df_FF[self.df_FF['atom type'].str.strip('_') == atom_h.specie.symbol]
-                epsilon = np.sqrt(row_g['epsilon'].iloc[0] * row_h['epsilon'].iloc[0])
-                sigma = (row_g['sigma'].iloc[0] + row_h['sigma'].iloc[0]) / 2
-                E += 4 * epsilon * ( (pow(sigma,12)/pow(distance,12)) - (pow(sigma,6)/pow(distance,6)) )
-                if shifted:
-                    shift += 4 * epsilon * ( (pow(sigma,12)/pow(cutoff,12)) - (pow(sigma,6)/pow(cutoff,6)) )
-        if shifted:
-            return self.R * (E - shift)
-        else:
-            return self.R * E
+            row_h = self.df_FF[self.df_FF['atom type'].str.strip('_') == atom_h.specie.symbol]
+            epsilon = np.sqrt(row_g['epsilon'].iloc[0] * row_h['epsilon'].iloc[0])
+            sigma = (row_g['sigma'].iloc[0] + row_h['sigma'].iloc[0]) / 2
+            E += 4 * epsilon * ( (pow(sigma,12)/pow(distance,12)) - (pow(sigma,6)/pow(distance,6)) )
+            if shifted:
+                shift += 4 * epsilon * ( (pow(sigma,12)/pow(cutoff,12)) - (pow(sigma,6)/pow(cutoff,6)) )
+        return self.R * (E - shift)
+
