@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np 
 
 struc = sys.argv[1]
-DIST_THRESHOLD = 2.0
 
 def extract_vertex(structure):
     f = open("Output/%s.nt2"%structure,'r')
@@ -19,6 +18,6 @@ def extract_vertex(structure):
 
 df = extract_vertex(struc)
 
-df_out = df[df['dist_to_nearest'].astype(float)>DIST_THRESHOLD].sort_values(by=['dist_to_nearest'])
+df.sort_values(by=['dist_to_nearest'], inplace=True)
 
-df_out.to_csv("Coordinates/"+struc+'.csv', index=False, sep=" ", encoding='utf-8')
+df.to_csv("Coordinates/"+struc+'.csv', index=False, sep=" ", encoding='utf-8')

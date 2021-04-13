@@ -125,7 +125,7 @@ class Screening():
 
         df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
         df_structures = df_structures[['Structures']]
-        df_structures['STRUCTURE_NAME'] = df_structures['Structures'].str.replace('.cif','')
+        df_structures['STRUCTURE_NAME'] = df_structures['Structures'].str.replace('.cif','', regex=False)
         
         self.home = False
         if type_ in self.SIMULATION_TYPES['INFO']:
