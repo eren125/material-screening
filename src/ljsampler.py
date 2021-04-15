@@ -22,6 +22,7 @@ class load_coordinates():
         self.df_FF = pd.DataFrame(FF_content, columns=columns).astype({'epsilon':float, "sigma":float})
         if self.df_FF.loc[0,'interaction form'] != 'lennard-jones':
             raise ValueError("Unsupported interation form: only Lennard-Jones interactions are supported")
+        self.df_FF['atom_symbol'] = self.df_FF['atom type'].str.strip('_')
         if not os.path.exists("Coordinates"):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), "Coordinates")
         self.atoms = atoms
@@ -32,7 +33,7 @@ class load_coordinates():
             os.mkdir("Energies")
 
 
-    def evaluate(self, structure_name, supercell, min_distance=2.0, energy_precision=6, energy_threshold=0.00, numpy_array=False):
+    def evaluate(self, structure_name, supercell, min_distance=2.0, energy_precision=6, energy_threshold=0.00, numpy_array=True):
         """Calculates the average energies/ minimum energy/ boltzmann average energies/ list of energies
 
         Args:
@@ -124,13 +125,15 @@ class load_coordinates():
         epsilon_g = row_g['epsilon'].iloc[0]
         sigma_g = row_g['sigma'].iloc[0]
         neighbors = structure_h.get_neighbors(atom_g, cutoff)
+	# TODO to improve
+        distance = np.array([atom_g.distance(atom_h) for atom_h in neighbors])
+        df_temp = pd.DataFrame(data={"atom_symbol":[atom_h.specie.symbol for atom_h in neighbors]})
+        df_temp = pd.merge(df_temp, self.df_FF, how='left', on='atom_symbol')
 
-        matrix = np.array([[atom_g.distance(atom_h), self.df_FF[self.df_FF['atom type'].str.strip('_') == atom_h.specie.symbol]['epsilon'].iloc[0], self.df_FF[self.df_FF['atom type'].str.strip('_') == atom_h.specie.symbol]['sigma'].iloc[0]] for atom_h in neighbors])
+        epsilon = np.sqrt(epsilon_g * df_temp['epsilon'].to_numpy())
+        sigma = (sigma_g + df_temp['sigma'].to_numpy()) / 2
 
-        epsilon = np.sqrt(epsilon_g * matrix[:,1])
-        sigma = (sigma_g + matrix[:,2]) / 2
-
-        E = np.sum( 4 * epsilon * ( (sigma / matrix[:,0])**12 - (sigma / matrix[:,0])**6 ) )
+        E = np.sum( 4 * epsilon * ( (sigma / distance)**12 - (sigma / distance)**6 ) )
         if shifted:
             shift = np.sum( 4 * epsilon * ( (sigma / cutoff)**12 - (sigma / cutoff)**6 ) )
         return self.R * (E - shift)
