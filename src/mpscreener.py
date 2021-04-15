@@ -65,7 +65,7 @@ class Screening():
         self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp'],
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi'],
-                    "HOME"   : ['sample'] 
+                    "HOME"   : ['sample', 'surface_sample'] 
                    }
         try:
             self.NODES = os.environ['NODES']
@@ -177,7 +177,7 @@ class Screening():
                                   IdentityChangesList            0 1
                                 SwapProbability                  1.0
                                 CreateNumberOfMolecules          0
-                                MolFraction                      %s     
+                                MolFraction                      %s  
                     """%(index,key,value))
                     index += 1
             self.write_file(INPUT_file, os.path.join(path_to_work, "INPUT"))
@@ -211,8 +211,8 @@ class Screening():
             self.write_file(RUN_file, self.path_to_run)
 
         elif type_ in self.SIMULATION_TYPES["HOME"]:
-            os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Home_screening_templates/run.py"),os.path.join(path_to_work,"run.py")))
             self.path_to_run = os.path.join(path_to_work,"run.py")
+            os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Home_screening_templates/run_%s.py"%type_),self.path_to_run))
             pd.DataFrame(columns={"Structure_name":[], "Adsorbent_name":[], "Acessible_average_energy":[], "Minimum_energy":[], "Boltzmann_average_energy":[]}).to_csv('home_output.csv',index=False)
 
 
