@@ -142,8 +142,12 @@ class load():
             S = np.sum(E_exp)
             E_Boltz = E_exp * E_list / S
             accessible_energy = np.extract(E_list<energy_threshold,E_list)
-            accessible_mean_energy.append(round(np.mean(accessible_energy), energy_precision))
-            min_energy.append(round(np.min(accessible_energy), energy_precision))
+            if len(accessible_energy)>0:
+                accessible_mean_energy.append(round(np.mean(accessible_energy), energy_precision))
+                min_energy.append(round(np.min(accessible_energy), energy_precision))
+            else:
+                accessible_mean_energy.append(np.nan)
+                min_energy.append(round(np.min(E_boltz), energy_precision))
             boltz_energy.append(round(np.sum(E_Boltz), energy_precision))
         return accessible_mean_energy, min_energy, boltz_energy
 
