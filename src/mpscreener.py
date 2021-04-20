@@ -11,7 +11,7 @@ SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SOURCE_DIR)
 
 # TODO 
-
+# Debug the file writting of Home type simulations (bug when several processes write on a same file)
 
 class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
@@ -214,6 +214,7 @@ class Screening():
             self.path_to_run = os.path.join(path_to_work,"run.py")
             os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Home_screening_templates/run_%s.py"%type_),self.path_to_run))
             pd.DataFrame(columns={"Structure_name":[], "Adsorbent_name":[], "Acessible_average_energy":[], "Minimum_energy":[], "Boltzmann_average_energy":[]}).to_csv('home_output.csv',index=False)
+            open(os.path.join(path_to_work, '.output_written.tmp'), 'a')
 
 
     @staticmethod
