@@ -81,6 +81,9 @@ class load():
 
     def evaluate_from_surface(self, structure_name, N_sample = 500, min_distance=2.0, energy_precision=6, energy_threshold=0.00, numpy_array=True):
         """A function to sample the accessible surfaces and calculate the energies associated
+        Args:
+            structure_name (str): the name of the structure (need to be present in the RASPA directory)
+            
         """
         cif_file = self._load_cif_file(structure_name, self.RASPA_DIR)
         structure = CifParser.from_string(cif_file).get_structures(primitive=False)[0]
@@ -137,17 +140,17 @@ class load():
 
                     LJ_energy = self.R * (E-shift)
                     E_list.append(LJ_energy)
-            E_list = np.array(E_list)
-            E_exp = np.exp(-E_list/(self.R*self.temperature))
+            E_list_np = np.array(E_list)
+            E_exp = np.exp(-E_list_np/(self.R*self.temperature))
             S = np.sum(E_exp)
-            E_Boltz = E_exp * E_list / S
-            accessible_energy = np.extract(E_list<energy_threshold,E_list)
+            E_Boltz = E_exp * E_list_np / S
+            accessible_energy = np.extract(E_list_np<energy_threshold,E_list_np)
             if len(accessible_energy)>0:
                 accessible_mean_energy.append(round(np.mean(accessible_energy), energy_precision))
                 min_energy.append(round(np.min(accessible_energy), energy_precision))
             else:
                 accessible_mean_energy.append(np.nan)
-                min_energy.append(round(np.min(E_boltz), energy_precision))
+                min_energy.append(round(np.min(E_list_np), energy_precision))
             boltz_energy.append(round(np.sum(E_Boltz), energy_precision))
         return accessible_mean_energy, min_energy, boltz_energy
 
