@@ -17,7 +17,7 @@ lj_sampler = load(ATOMS, forcefield=Args[2], temperature=float(Args[3]), cutoff=
 
 structure_name = Args[5]
 
-accessible_mean_energy, min_energy, boltz_energy = lj_sampler.evaluate_from_surface(structure_name)
+accessible_mean_energy, min_energy, boltz_energy = lj_sampler.evaluate_from_surface(structure_name, N_sample = int(Args[6]))
 
 path = os.path.join('.output_written.tmp')
 while not os.path.exists(path):

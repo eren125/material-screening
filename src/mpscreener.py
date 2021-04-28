@@ -83,7 +83,7 @@ class Screening():
             if len(self.NODES)*procs_per_node > nprocs:
                 raise ValueError('More processes at a time than proccessors available!!!')
         self.nprocs = nprocs
-
+        self.type_ = type_
         available_types = sum(self.SIMULATION_TYPES.values(), [])
         if type_ not in available_types:
             raise ValueError(('%s not an option yet. Please choose between: ' +
@@ -147,6 +147,7 @@ class Screening():
                 df['supercell_wrap'] = df['UnitCell'].apply(lambda x: x.replace(' ','|'))
                 self.data = df[['STRUCTURE_NAME','supercell_wrap']].to_records(index=False)
                 self.home = True
+                self.n_sample = cycles
 
         pd.DataFrame({'Structures':[],"CPU_time (s)":[]}).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"), index=False)
         print("%s simulation of %s"%(type_,' '.join(MOLECULES)))
@@ -194,6 +195,7 @@ class Screening():
             self.write_file(RUN_file, self.path_to_run)
             if type_ != 'grid':
                 DATA_file = open(os.path.join(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_), "r").read()
+                DATA_file = DATA_file.replace("MOLECULE","xenon") # make it general
                 self.write_file(DATA_file, os.path.join(path_to_work,"data.sh"))
                 if type_ == 'info':
                     os.system("cp %s %s"%(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/merge_info.py"), os.path.join(path_to_work,"merge_info.py")))
@@ -273,6 +275,8 @@ class Screening():
 
         t0 = time()
         structure_name, supercell_wrap = inputs
+        if self.type_ == "surface_sample":
+            supercell_wrap = self.n_sample
         if len(self.NODES) == 0:
             command = "python3 %s \"%s\" %s %s %s %s \"%s\" "%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
             print(command)

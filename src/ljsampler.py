@@ -75,7 +75,7 @@ class load():
             Sum_exp = df_voro["exp_energy_%s"%atom_type].sum()
             df_voro["pond_energy_%s"%atom_type] = df_voro["exp_energy_%s"%atom_type] * df_voro["Energy_%s"%atom_type] / Sum_exp
             boltz_energy.append( round(df_voro["pond_energy_%s"%atom_type].sum(), energy_precision) )
-        df_voro.to_csv('Energies/%s.csv'%structure_name)
+        df_voro.to_csv('Energies/%s.csv'%structure_name, index=False)
         return accessible_mean_energy, min_energy, boltz_energy
 
 
@@ -88,6 +88,8 @@ class load():
         cif_file = self._load_cif_file(structure_name, self.RASPA_DIR)
         structure = CifParser.from_string(cif_file).get_structures(primitive=False)[0]
         N_atoms = len(structure)
+
+        pd.DataFrame({"adsorbent":[], "x":[], "y":[], "z":[], "Energy":[]}).to_csv("Energies/%s.csv"%(structure_name), index=False)
 
         lattice_matrix = structure.lattice.matrix
 
@@ -139,6 +141,8 @@ class load():
                     shift = self._calculate_lj(epsilon_cutoff, sigma_cutoff, self.cutoff)
 
                     LJ_energy = self.R * (E-shift)
+                    pd.DataFrame({"adsorbent":[atom_type_g], "x":[cart_coord_adsorbent[0]], "y":[cart_coord_adsorbent[1]], "z":[cart_coord_adsorbent[2]], "Energy":[LJ_energy]}).to_csv("Energies/%s.csv"%(structure_name), mode="a", index=False, header=False)
+
                     E_list.append(LJ_energy)
             E_list_np = np.array(E_list)
             E_exp = np.exp(-E_list_np/(self.R*self.temperature))
