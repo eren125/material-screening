@@ -62,7 +62,7 @@ class Screening():
         """
 
         ### Initialisation of class objects and error catching ###
-        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp'],
+        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp', 'diffusion'],
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi'],
                     "HOME"   : ['sample', 'surface_sample'] 

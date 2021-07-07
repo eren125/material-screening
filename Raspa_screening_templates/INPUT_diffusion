@@ -1,0 +1,34 @@
+SimulationType                MolecularDynamics
+NumberOfCycles                N_cycles
+NumberOfInitializationCycles  N_init
+NumberofEquilibrationCycles   N_init
+PrintEvery                    N_cycles
+PrintPropertiesEvery          N_cycles
+RestartFile                   no  
+ContinueAfterCrash            no
+WriteBinaryRestartFileEvery   N_init
+
+Ensemble                      NVT
+TimeStep		              0.001
+
+Forcefield                    FORCE_FIELD
+ChargeMethod                  None
+
+Framework 0
+FrameworkName Arg
+UnitCells UNITCELL
+ExternalTemperature 298.0
+ComputeMSD yes
+PrintMSDEvery N_init
+
+NumberOfGrids N_ATOMS
+GridTypes ATOMS
+SpacingVDWGrid 0.1
+SpacingCoulombGrid 0.1
+UseTabularGrid yes
+
+Component 0 MoleculeName                     MOLECULE
+            MoleculeDefinition               TraPPE
+            BlockPockets                     yes
+            BlockPocketsFileName             Arg
+            CreateNumberOfMolecules          1
