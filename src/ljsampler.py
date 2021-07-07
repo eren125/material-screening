@@ -60,7 +60,7 @@ class load():
         inv_lattice_matrix = np.linalg.inv(lattice_matrix)
 
         df_voro["cartesian_coordinates"] = df_voro.apply(lambda row: np.array([float(row.x),float(row.y),float(row.z)]), axis=1)
-        df_voro["fractional_coordinates"] = df_voro["cartesian_coordinates"].apply(lambda cart_coord: inv_lattice_matrix@np.array(cart_coord))
+        df_voro["fractional_coordinates"] = df_voro["cartesian_coordinates"].to_numpy().dot(inv_lattice_matrix)
 
         accessible_mean_energy, min_energy, boltz_energy = [], [], []
         for atom_type in self.atoms:
