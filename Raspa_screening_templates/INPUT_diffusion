@@ -1,15 +1,15 @@
 SimulationType                MolecularDynamics
 NumberOfCycles                N_cycles
-NumberOfInitializationCycles  N_init
-NumberofEquilibrationCycles   N_init
+NumberOfInitializationCycles  100000
+NumberofEquilibrationCycles   100000
 PrintEvery                    N_cycles
 PrintPropertiesEvery          N_cycles
-RestartFile                   no  
-ContinueAfterCrash            no
-WriteBinaryRestartFileEvery   N_init
+RestartFile                   RESTART
+ContinueAfterCrash            RESTART
+WriteBinaryRestartFileEvery   500000
 
 Ensemble                      NVT
-TimeStep		              0.001
+TimeStep		              TIMESTEP
 
 Forcefield                    FORCE_FIELD
 ChargeMethod                  None
@@ -17,9 +17,9 @@ ChargeMethod                  None
 Framework 0
 FrameworkName Arg
 UnitCells UNITCELL
-ExternalTemperature 298.0
+ExternalTemperature TEMPERATURE
 ComputeMSD yes
-PrintMSDEvery N_init
+PrintMSDEvery 500000
 
 NumberOfGrids N_ATOMS
 GridTypes ATOMS

@@ -15,7 +15,7 @@ sys.path.append(SOURCE_DIR)
 
 class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
-    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH="."):
+    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH=".", RESTART="no"):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -64,7 +64,7 @@ class Screening():
         ### Initialisation of class objects and error catching ###
         self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp', 'diffusion'],
                     "INFO"   : ['info'],
-                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi'],
+                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi','block'],
                     "HOME"   : ['sample', 'surface_sample'] 
                    }
         try:
@@ -121,7 +121,7 @@ class Screening():
         self.OUTPUT_PATH = os.path.join(current_directory, OUTPUT_PATH)
 
         self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
-        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0])
+        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius)
 
         df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
         df_structures = df_structures[['Structures']]
@@ -189,13 +189,16 @@ class Screening():
                     os.mkdir(os.path.join(path_to_work, "RestartInitial"))
                     os.mkdir(os.path.join(path_to_work, "RestartInitial/System_0"))
                 RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run_%s"%type_), "r").read()
+            if type_ == "diffusion":
+                RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run_diffusion"), **kwargs)
+                os.system("mkdir %s/Output"%path_to_work)
             else:
                 RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run"), "r").read()
+            
             self.path_to_run = os.path.join(path_to_work,"run")
             self.write_file(RUN_file, self.path_to_run)
             if type_ != 'grid':
-                DATA_file = open(os.path.join(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_), "r").read()
-                DATA_file = DATA_file.replace("MOLECULE","xenon") # make it general
+                DATA_file = self.generate(os.path.join(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_), **kwargs)
                 self.write_file(DATA_file, os.path.join(path_to_work,"data.sh"))
                 if type_ == 'info':
                     os.system("cp %s %s"%(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/merge_info.py"), os.path.join(path_to_work,"merge_info.py")))

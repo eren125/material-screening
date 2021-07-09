@@ -47,6 +47,9 @@ parser.add_argument('-c', '--composition', nargs=2, default=None,
 parser.add_argument('-r', '--radius', nargs='?', default='1.2',
                     help='specify the radius of the probe in Zeo++ calculations\nDefault: 1.2 angstrom')
 
+parser.add_argument('-R', '--restart', nargs='?', default='no',
+                    help='specify if you want to restart from binary files')
+
 parser.add_argument('-o', '--output_directory', nargs='?', default='.',
                     help='specify the directory in which you want the simulation files to be installed. Default=. (current directory)')
 
@@ -65,11 +68,12 @@ cutoff = float(args.Cutoff)
 CYCLES = int(args.Ncycles)
 COMPOSITION = args.composition
 radius = float(args.radius)
+RESTART = args.restart
 
 nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
 # initialising the screening procedure
 screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperature=temperature, cutoff=cutoff,probe_radius=radius, 
-         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH)
+         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH, RESTART=RESTART)
 # launching the screening
 screen.mp_run()

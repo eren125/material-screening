@@ -7,4 +7,4 @@ cd "$(dirname "$0")"
 ${ZEO_DIR}/network -nor -nt2 ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif
 mv ${RASPA_DIR}/share/raspa/structures/cif/${1}.nt2 Output/.
 python3 extract_vertex.py ${1} 
-echo "structures ${1} voronoi Simulation DONE on $node"
+echo "structure ${1} voronoi Simulation DONE on $node"

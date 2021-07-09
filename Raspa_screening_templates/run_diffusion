@@ -9,9 +9,9 @@ sed -i "s/Arg/${1}/g" Scripts/simulation_${1}.input
 sed -i "s/UNITCELL/${2}/g" Scripts/simulation_${1}.input
 echo "${1} ${2} Script DONE on $node"
 mkdir Output/${1}
-cd ${1}
-${RASPA_DIR}/bin/simulate -i ../Scripts/simulation_${1}.input > /dev/null 2>&1
+cd Output/${1}
+${RASPA_DIR}/bin/simulate -i ../../Scripts/simulation_${1}.input > /dev/null 2>&1
 echo "${1} ${2} Simulation DONE on $node"
-mv MSDOrderN/System_0/msd_self_MOLECULE_0.dat ../msd_self_MOLECULE_${1}.dat
-cd ..
-rm -rf ${1}
+#mv MSDOrderN/System_0/msd_self_MOLECULE_0.dat ../msd_self_MOLECULE_${1}.dat
+#rm -rf Movies
+#rm -rf VTK
