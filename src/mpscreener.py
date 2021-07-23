@@ -211,7 +211,7 @@ class Screening():
                 if not os.path.exists(os.path.join(path_to_work, 'Coordinates')):
                     os.mkdir(os.path.join(path_to_work, 'Coordinates'))
                 os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Zeo++_screening_templates/extract_vertex.py"),path_to_work))
-            RUN_file = open(os.path.join(SOURCE_DIR,"../Zeo++_screening_templates/run_%s"%type_), "r").read()
+            RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Zeo++_screening_templates/run_%s"%type_), **kwargs)
             self.path_to_run = os.path.join(path_to_work,"run")
             self.write_file(RUN_file, self.path_to_run)
 

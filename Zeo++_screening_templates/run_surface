@@ -4,5 +4,5 @@ export MATSCREEN=/home/emmanuel/Documents/material-screening
 source ${MATSCREEN}/set_environment
 
 cd "$(dirname "$0")" 
-${ZEO_DIR}/network -ha -sa ${2} ${2} NCYCLES Output/results_${1}_${2}.sa ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&
+${ZEO_DIR}/network -ha -sa ${2} ${2} N_cycles Output/results_${1}_${2}.sa ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&
 echo "structure ${1} radius ${2} surface Simulation DONE on $node"
