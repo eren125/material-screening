@@ -65,7 +65,8 @@ class Screening():
         self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp', 'diffusion'],
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi','block'],
-                    "HOME"   : ['sample', 'surface_sample'] 
+                    "HOME"   : ['sample', 'surface_sample'],
+                    "CPP"    : ["csurface"]
                    }
         try:
             self.NODES = os.environ['NODES']
@@ -121,7 +122,7 @@ class Screening():
         self.OUTPUT_PATH = os.path.join(current_directory, OUTPUT_PATH)
 
         self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
-        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius)
+        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius, PATH=self.OUTPUT_PATH)
 
         df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
         df_structures = df_structures[['Structures']]
@@ -130,11 +131,11 @@ class Screening():
         self.home = False
         if type_ in self.SIMULATION_TYPES['INFO']:
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
-        elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']:
+        elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
             df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8') 
             df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="inner", on="STRUCTURE_NAME")
             df = df[df['Volume [nm^3]'] <= Threshold_volume]    
-            if type_ in self.SIMULATION_TYPES['RASPA2']:
+            if type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['CPP']:
                 self.data = df[['STRUCTURE_NAME','UnitCell']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['ZEO++']:
                 df['ProbeRadius'] = probe_radius
@@ -221,6 +222,12 @@ class Screening():
             pd.DataFrame(columns={"Structure_name":[], "Adsorbent_name":[], "Acessible_average_energy":[], "Minimum_energy":[], "Boltzmann_average_energy":[]}).to_csv('home_output.csv',index=False)
             open(os.path.join(path_to_work, '.output_written.tmp'), 'a')
 
+        elif type_ in self.SIMULATION_TYPES["CPP"]:
+            self.path_to_run = os.path.join(path_to_work,"run.sh")
+            RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Cpp_screening_templates/run_%s.sh"%type_), **kwargs)
+            self.write_file(RUN_file, self.path_to_run)
+            pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "time":[]}).to_csv('cpp_output.csv',index=False)
+    
 
     @staticmethod
     def generate(path, **replace_string):

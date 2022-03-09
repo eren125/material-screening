@@ -1,5 +1,6 @@
 export MATSCREEN=/home/emmanuel/Documents/material-screening
-export RASPA_DIR=/home/emmanuel/Simulations
+export RASPA_DIR=/home/emmanuel/raspa
 export DYLD_LIBRARY_PATH=${RASPA_DIR}/lib
 export LD_LIBRARY_PATH=${RASPA_DIR}/lib
 export ZEO_DIR=/home/emmanuel/Applications/zeo++-0.3
+export CPP_DIR=/home/emmanuel/Documents/surface-csampler
