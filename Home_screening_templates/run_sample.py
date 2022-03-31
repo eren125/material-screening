@@ -11,11 +11,11 @@ from src.ljsampler import load
 
 Args = sys.argv 
 
-ATOMS = Args[1].split('|')
+ATOMS = Args[5].split('|')
 N_atoms = len(ATOMS)
-lj_sampler = load(ATOMS, forcefield=Args[2], temperature=float(Args[3]), cutoff=float(Args[4]))
+lj_sampler = load(ATOMS, forcefield=Args[3], temperature=float(Args[4]), cutoff=float(Args[2]))
 
-structure_name = Args[5]
+structure_name = Args[1]
 supercell = [int(c) for c in Args[6].split('|')]
 
 accessible_mean_energy, min_energy, boltz_energy = lj_sampler.evaluate_from_coordinates(structure_name, supercell)

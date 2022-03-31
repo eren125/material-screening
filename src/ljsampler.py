@@ -93,7 +93,7 @@ class load():
 
         lattice_matrix = structure.lattice.matrix
 
-        accessible_mean_energy, min_energy, boltz_energy = [], [], []
+        accessible_mean_energy, min_energy, boltz_energy, henry = [], [], [], []
 
         for atom_type_g in self.atoms:
             E_list = []
@@ -141,7 +141,7 @@ class load():
                     shift = self._calculate_lj(epsilon_cutoff, sigma_cutoff, self.cutoff)
 
                     LJ_energy = self.R * (E-shift)
-                    pd.DataFrame({"adsorbent":[atom_type_g], "x":[cart_coord_adsorbent[0]], "y":[cart_coord_adsorbent[1]], "z":[cart_coord_adsorbent[2]], "Energy":[LJ_energy]}).to_csv("Energies/%s.csv"%(structure_name), mode="a", index=False, header=False)
+                    # pd.DataFrame({"adsorbent":[atom_type_g], "x":[cart_coord_adsorbent[0]], "y":[cart_coord_adsorbent[1]], "z":[cart_coord_adsorbent[2]], "Energy":[LJ_energy]}).to_csv("Energies/%s.csv"%(structure_name), mode="a", index=False, header=False)
 
                     E_list.append(LJ_energy)
             E_list_np = np.array(E_list)
@@ -156,7 +156,8 @@ class load():
                 accessible_mean_energy.append(np.nan)
                 min_energy.append(round(np.min(E_list_np), energy_precision))
             boltz_energy.append(round(np.sum(E_Boltz), energy_precision))
-        return accessible_mean_energy, min_energy, boltz_energy
+            henry.append(np.mean(E_exp)/(self.R*self.temperature))
+        return accessible_mean_energy, min_energy, boltz_energy, henry
 
 
     def lennard_jones_from_pymatgen_np(self, atom_g, structure_h, shifted=True):

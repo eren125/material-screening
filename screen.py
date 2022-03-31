@@ -38,7 +38,7 @@ parser.add_argument('-T', '--Temperature', nargs='?', default=298.0,
 parser.add_argument('-p', '--pressures', nargs='+', default=['101300'],
                     help='specify the pressures in the simulation\nExample: xenon krypton CO2. Default=101300')
 
-parser.add_argument('-C', '--Cutoff', nargs=2, default=12,
+parser.add_argument('-C', '--Cutoff', nargs='?', default=12,
                     help='specify the cut-off of the Raspa2 simulations\nDefault=12')
 
 parser.add_argument('-c', '--composition', nargs=2, default=None,

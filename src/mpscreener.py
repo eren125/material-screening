@@ -62,10 +62,10 @@ class Screening():
         """
 
         ### Initialisation of class objects and error catching ###
-        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'vf', 'sp', 'diffusion'],
+        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'widom_nogrid', 'vf', 'sp', 'diffusion'],
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi','block'],
-                    "HOME"   : ['sample', 'surface_sample'],
+                    "HOME"   : ['sample', 'surface_sample', 'findsym'],
                     "CPP"    : ["csurface"]
                    }
         try:
@@ -132,7 +132,7 @@ class Screening():
         if type_ in self.SIMULATION_TYPES['INFO']:
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
         elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
-            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8') 
+            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME']) 
             df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="inner", on="STRUCTURE_NAME")
             df = df[df['Volume [nm^3]'] <= Threshold_volume]    
             if type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['CPP']:
@@ -144,7 +144,7 @@ class Screening():
                 self.atoms = '|'.join([mol2atoms[molecule] for molecule in MOLECULES])
                 self.forcefield = force_field
                 self.temperature = temperature
-                self.cutoff = cutoff
+                self.cutoff = float(cutoff)
                 df['supercell_wrap'] = df['UnitCell'].apply(lambda x: x.replace(' ','|'))
                 self.data = df[['STRUCTURE_NAME','supercell_wrap']].to_records(index=False)
                 self.home = True
@@ -219,8 +219,13 @@ class Screening():
         elif type_ in self.SIMULATION_TYPES["HOME"]:
             self.path_to_run = os.path.join(path_to_work,"run.py")
             os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Home_screening_templates/run_%s.py"%type_),self.path_to_run))
-            pd.DataFrame(columns={"Structure_name":[], "Adsorbent_name":[], "Acessible_average_energy":[], "Minimum_energy":[], "Boltzmann_average_energy":[]}).to_csv('home_output.csv',index=False)
-            open(os.path.join(path_to_work, '.output_written.tmp'), 'a')
+            if type_ == "findsym":
+                path_to_Output = os.path.join(path_to_work, 'Output')
+                if not os.path.exists(path_to_Output):
+                    os.mkdir(path_to_Output)
+            else : 
+                pd.DataFrame(columns={"Structure_name":[], "Adsorbent_name":[], "Acessible_average_energy":[], "Minimum_energy":[], "Boltzmann_average_energy":[], "Henry_coeff":[]}).to_csv('home_output.csv',index=False)
+                open(os.path.join(path_to_work, '.output_written.tmp'), 'a')
 
         elif type_ in self.SIMULATION_TYPES["CPP"]:
             self.path_to_run = os.path.join(path_to_work,"run.sh")
@@ -288,7 +293,7 @@ class Screening():
         if self.type_ == "surface_sample":
             supercell_wrap = self.n_sample
         if len(self.NODES) == 0:
-            command = "python3 %s \"%s\" %s %s %s %s \"%s\" "%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
+            command = "python3 %s %s %s %s %s \"%s\" \"%s\" "%(self.path_to_run, structure_name, self.cutoff, self.forcefield, self.temperature, self.atoms, supercell_wrap)
             print(command)
         else:
             worker = int(mp.current_process()._identity[0])

@@ -1,0 +1,20 @@
+SimulationType                MonteCarlo
+NumberOfCycles                N_cycles
+NumberOfInitializationCycles  N_init
+PrintPropertiesEvery          N_print
+RestartFile                   no
+
+Forcefield                    FORCE_FIELD
+
+Framework 0
+ChargeMethod None
+FrameworkName Arg
+CutOffVDW CUTOFF
+UnitCells UNITCELL
+ExternalTemperature 298.0
+
+Component 0 MoleculeName                     MOLECULE
+            MoleculeDefinition               TraPPE
+            IdealRosenbluthValue             1.0
+            WidomProbability                 1.0
+            CreateNumberOfMolecules          0
