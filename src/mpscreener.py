@@ -133,6 +133,7 @@ class Screening():
         df_structures['STRUCTURE_NAME'] = df_structures['Structures'].str.replace('.cif','', regex=False)
 
         self.home = False
+        self.forcefield = force_field
         if type_ in self.SIMULATION_TYPES['INFO']:
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
         elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
@@ -148,7 +149,6 @@ class Screening():
                 self.data = df[['STRUCTURE_NAME','ProbeRadius']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['HOME']:
                 self.atoms = '|'.join([mol2atoms[molecule] for molecule in MOLECULES])
-                self.forcefield = force_field
                 self.temperature = temperature
                 self.cutoff = float(cutoff)
                 df['supercell_wrap'] = df['UnitCell'].apply(lambda x: x.replace(' ','|'))
@@ -282,13 +282,13 @@ class Screening():
         t0 = time()
         FRAMEWORK_NAME,UNITCELL = inputs
         if len(self.NODES) == 0:
-            command = "bash %s %s \"%s\""%(self.path_to_run,FRAMEWORK_NAME,UNITCELL)
+            command = "bash %s %s \"%s\" %s"%(self.path_to_run,FRAMEWORK_NAME,UNITCELL,self.forcefield)
         else:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s bash \"%s %s \\\"%s\\\"\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL)
+            command = "ssh %s \"bash %s %s \\\"%s\\\" %s\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL,self.forcefield)
         os.system(command)
         output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)

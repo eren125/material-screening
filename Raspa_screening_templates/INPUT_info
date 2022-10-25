@@ -2,7 +2,7 @@ SimulationType                MonteCarlo
 NumberOfCycles                0
 RestartFile                   no
 
-Forcefield                    UFF
+Forcefield                    FORCEFIELD
 
 Framework 0
 FrameworkName Arg

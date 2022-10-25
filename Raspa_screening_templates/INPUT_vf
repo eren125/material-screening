@@ -4,7 +4,7 @@ NumberOfInitializationCycles  N_init
 PrintPropertiesEvery          N_print
 RestartFile                   no
 
-Forcefield                    UFF
+Forcefield                    FORCEFIELD
 
 Framework 0
 ChargeMethod None

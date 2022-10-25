@@ -4,7 +4,7 @@ NumberOfInitializationCycles  0
 PrintPropertiesEvery          0
 RestartFile                   RESTART_MODE
 
-Forcefield                    UFF
+Forcefield                    FORCEFIELD
 
 Ensemble NVT
 
