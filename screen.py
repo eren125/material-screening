@@ -1,4 +1,4 @@
-#!/home/emmanuel/.venv/bin/python
+#! python3
 import argparse
 import textwrap
 from src.mpscreener import Screening

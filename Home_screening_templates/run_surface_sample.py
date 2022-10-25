@@ -9,7 +9,7 @@ SOURCE_DIR = os.environ['MATSCREEN']
 sys.path.append(SOURCE_DIR)
 from src.ljsampler import load
 
-Args = sys.argv 
+Args = sys.argv
 
 ATOMS = Args[5].split('|')
 N_atoms = len(ATOMS)

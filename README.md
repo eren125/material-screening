@@ -26,9 +26,13 @@ Remember the path to the directory containing the compiled ```network``` binary 
 
 This part explains how you will need to set-up your working environment
 
+### Environment
+
+In the ```set_environment``` file, replace the example paths by the accurate ones.
+
 ### Python environment
 
-I used a virtual environment for ```python3.8.5``` but it is optional. 
+I used a virtual environment for ```python3.8.5``` but it is optional.
 To set-up a virtual environment and install the required packages in ```requirements.txt```, follow those instructions:
 ```
 ./path_to_python3.8.5/bin/python3.* -m venv path_to_venv
@@ -37,14 +41,6 @@ pip install -r requirements.txt
 ```
 
 If you want to go back to your global python environment type: ``deactivate``
-
-### Raspa2 environment
-
-Modify ```set_environment``` file by replacing ```/home/emmanuel/Simulations``` by your own Raspa2 path.
-
-### Zeo++ environment
-
-Modify ```set_environment``` file by replacing ```/home/emmanuel/Applications/zeo++-0.3``` by your own Zeo++ path.
 
 ## Database of materials and force fields
 

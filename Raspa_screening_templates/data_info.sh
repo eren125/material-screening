@@ -12,4 +12,4 @@ grep -A 3 "Box\[0\]" Output/System_0/* > matrix_temp.txt
 sed -n "2~5p;3~5p;4~5p" matrix_temp.txt > matrix.txt
 rm matrix_temp.txt
 
-python3 merge_info.py 
+python3 merge_info.py
