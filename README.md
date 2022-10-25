@@ -26,9 +26,21 @@ Remember the path to the directory containing the compiled ```network``` binary 
 
 This part explains how you will need to set-up your working environment
 
-### Environment
+### Bash environment
 
 In the ```set_environment``` file, replace the example paths by the accurate ones.
+
+## RASPA environment
+
+All molecules will be taken from ${RASPA_DIR}/share/raspa/molecules/TraPPE, which must
+contain at least the definition for helium (as well as all other molecules you need).
+
+If the folder is missing, simply create it.
+The file for helium can be taken from https://github.com/numat/RASPA2/blob/master/molecules/TraPPE/helium.def.
+
+Any used force field must be present in ${RASPA_DIR}/share/raspa/forcefields. In particular,
+the default force field UFF should be copied from ${MATSCREEN}/forcefield if not already
+present.
 
 ### Python environment
 
