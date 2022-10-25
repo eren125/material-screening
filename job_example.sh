@@ -1,8 +1,7 @@
 #!/bin/bash
 #TODO integrate it into the python script as an important environment variable
 start=$SECONDS
-export CURRENTDIR=$PWD
-source ${dirname 0}/set_environment
+export MATSCREEN=/home/emmanuel/Documents/material-screening # replace with your path to material-screening
 #export NODES=$(srun hostname | sort | uniq)
 #echo "Running on nodes:"
 #echo "${NODES}"

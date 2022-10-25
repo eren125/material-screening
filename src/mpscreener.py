@@ -11,11 +11,11 @@ import pandas as pd
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SOURCE_DIR)
 
-# TODO 
-# Debug the file writting of Home type simulations (bug when several processes write on a same file)
+# TODO
+# Debug the file writing of Home type simulations (bug when several processes write on a same file)
 
 class Screening():
-    def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
+    def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None,
     pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, rejection=0.85, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH=".", RESTART="no"):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
@@ -23,23 +23,23 @@ class Screening():
         If setup is True, creates file for the simulation INPUT and run mainly (data for post-processing and RestartInitial for single point calculations)
 
         Args:
-            structures_file    (str): relative path to the csv file containing all the structures, 
+            structures_file    (str): relative path to the csv file containing all the structures,
                                       the headers must contain "Structures"
             procs_per_node     (int): number of processors available in each node for a given calculator
             nprocs             (int): number of processes to be run at the same time
             type_              (str): type of simulation the user wants to carry out. Currently available:
                                       grid calculation via 'grid', GCMC via 'ads' 'coad', NVT MC via 'ent',
-                                      Widom's insertion via 'widom', helium void fraction via 'vf', 
+                                      Widom's insertion via 'widom', helium void fraction via 'vf',
                                       Zeo++ via 'surface' 'volume' 'pore' 'channel' and global information via 'info'
-            force_field        (str): force field used for the molecular simulations, 
-                                      it must be defined in the Raspa directory 
+            force_field        (str): force field used for the molecular simulations,
+                                      it must be defined in the Raspa directory
             MOLECULES         (list): list of molecules (str) to be adsorbed on the materials
             composition       (list): list of mole fractions for the molecules defined in MOLECULES
                                       must have the same length as MOLECULES, and sum must equal to 1
             pressures         (list): list of pressures (float) in pascal to be simulated
             TEMP             (float): temperature in kelvin for the Raspa2 simulations (default = 298.0 K)
             cycles             (int): number of prodution cycles used for the Raspa2 simulations
-                                      equilibration cycles are fixed to 10k for now (to improve)                 
+                                      equilibration cycles are fixed to 10k for now (to improve)
             cutoff           (float): sets the van der Waals cutoff in Raspa2 simulation
             probe_radius     (float): radius of the probe in angström considered in Zeo++ simulations
             Threshold_volume (float): threshold at which the volume is considered too big for grid calculations
@@ -59,9 +59,9 @@ class Screening():
             generate      : generate an input string according to the file specified
             write_file    : print out a string in a file at the specified output path
             run           : function that takes the framework's name and the smallest unitcell for a 12 angstrom cut-off
-                            and runs the corresponding simulation according to the run bash file 
-            run_mp        : function that calls `run` multiple times in parallel. mp.Pool distributes the jobs 
-                            to $nprocs workers so that every job  
+                            and runs the corresponding simulation according to the run bash file
+            run_mp        : function that calls `run` multiple times in parallel. mp.Pool distributes the jobs
+                            to $nprocs workers so that every job
         """
 
         ### Initialisation of class objects and error catching ###
@@ -120,28 +120,28 @@ class Screening():
         molecule_dict = {}
         for i in range(len(mole_fraction)):
             molecule_dict[MOLECULES[i]] = mole_fraction[i]
-        
-        current_directory = os.environ['CURRENTDIR']
+
+        current_directory = os.getcwd()
         self.OUTPUT_PATH = os.path.join(current_directory, OUTPUT_PATH)
         self.n_sample = cycles
         self.acc_coeff = probe_radius
 
-        self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
+        self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles,
         CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius, REJECT=rejection, PATH=self.OUTPUT_PATH)
 
         df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
         df_structures = df_structures[['Structures']]
         df_structures['STRUCTURE_NAME'] = df_structures['Structures'].str.replace('.cif','', regex=False)
-        
+
         self.home = False
         if type_ in self.SIMULATION_TYPES['INFO']:
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
         elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
-            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME']) 
+            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME'])
             df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="left", on="STRUCTURE_NAME")
             df['UnitCell'] = df['UnitCell'].fillna("1 1 1")
             df['Volume [nm^3]'] = df['Volume [nm^3]'].fillna(Threshold_volume)
-            df = df[df['Volume [nm^3]'] <= Threshold_volume]    
+            df = df[df['Volume [nm^3]'] <= Threshold_volume]
             if type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['CPP']:
                 self.data = df[['STRUCTURE_NAME','UnitCell']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['ZEO++']:
@@ -185,7 +185,7 @@ class Screening():
                                   IdentityChangesList            0 1
                                 SwapProbability                  1.0
                                 CreateNumberOfMolecules          0
-                                MolFraction                      %s  
+                                MolFraction                      %s
                     """%(index,key,value))
                     index += 1
             self.write_file(INPUT_file, os.path.join(path_to_work, "INPUT"))
@@ -201,7 +201,7 @@ class Screening():
                 os.system("mkdir %s/Output"%path_to_work)
             else:
                 RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run"), "r").read()
-            
+
             self.path_to_run = os.path.join(path_to_work,"run")
             self.write_file(RUN_file, self.path_to_run)
             if type_ != 'grid':
@@ -229,7 +229,7 @@ class Screening():
                 path_to_Output = os.path.join(path_to_work, 'Output')
                 if not os.path.exists(path_to_Output):
                     os.mkdir(path_to_Output)
-            else : 
+            else:
                 pd.DataFrame(columns={"Structure_name":[], "Adsorbent_name":[], "Acessible_average_energy":[], "Minimum_energy":[], "Boltzmann_average_energy":[], "Henry_coeff":[]}).to_csv('home_output.csv',index=False)
                 open(os.path.join(path_to_work, '.output_written.tmp'), 'a')
 
@@ -241,7 +241,7 @@ class Screening():
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.acc_coeff),index=False)
             else:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
-    
+
 
     @staticmethod
     def generate(path, **replace_string):
@@ -266,7 +266,7 @@ class Screening():
 
         Args:
             generated_file (str): content of the generated file
-            outfile_path (str): path to the output file 
+            outfile_path (str): path to the output file
         """
 
         with open(outfile_path, "w") as outfile:
