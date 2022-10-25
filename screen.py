@@ -1,4 +1,6 @@
-#! python3
+#!/usr/bin/bash
+''''exec $MATSCREEN_PYTHON "$0" "$@" # '''
+
 import argparse
 import textwrap
 from src.mpscreener import Screening
