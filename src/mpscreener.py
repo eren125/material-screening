@@ -10,6 +10,7 @@ import pandas as pd
 
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SOURCE_DIR)
+MATSCREEN = os.path.dirname(SOURCE_DIR)
 
 # TODO
 # Debug the file writing of Home type simulations (bug when several processes write on a same file)
@@ -45,7 +46,7 @@ class Screening():
             Threshold_volume (float): threshold at which the volume is considered too big for grid calculations
                                       it consumes too much RAM Memory for the machine currently used
             OUTPUT_PATH        (str): relative path to where the outputs of the simulations will be printed
-            glost_list        (bool): Print a list of commands to be run by glost_launch binary 
+            glost_list        (bool): Print a list of commands to be run by glost_launch binary
                                       (see https://github.com/cea-hpc/glost.git)
 
         self variables:
@@ -76,16 +77,14 @@ class Screening():
         except:
             self.NODES = ''
         self.NODES = self.NODES.split()
-        try:
-            os.system("source %s/../set_environment"%SOURCE_DIR)
-        except:
-            raise FileNotFoundError("Please check your set_environement file in %s"%SOURCE_DIR)
+        if not os.path.exists(os.path.join(MATSCREEN, "set_environment")):
+            raise FileNotFoundError("Please check your set_environement file in %s"%MATSCREEN)
         if len(self.NODES)==0:
             if procs_per_node > nprocs:
-                raise ValueError('More processes at a time than proccessors available!!!')
+                raise ValueError('More processes at a time than processors available!!!')
         else:
             if len(self.NODES)*procs_per_node > nprocs:
-                raise ValueError('More processes at a time than proccessors available!!!')
+                raise ValueError('More processes at a time than processors available!!!')
         self.nprocs = nprocs
         self.type_ = type_
         available_types = sum(self.SIMULATION_TYPES.values(), [])
@@ -105,7 +104,7 @@ class Screening():
         else:
             mole_fraction = []
 
-        df_mol = pd.read_csv(os.path.join(SOURCE_DIR, '../data/molecules.csv'), encoding='utf-8')
+        df_mol = pd.read_csv(os.path.join(MATSCREEN, 'data/molecules.csv'), encoding='utf-8')
         if not all([molecule in list(df_mol['MOLECULE']) for molecule in MOLECULES]):
             raise ValueError('one of the molecules %s not in adsorbent list' %(' '.join(MOLECULES)))
         mol2atoms = {row['MOLECULE']: row['ATOMS'] for index,row in df_mol.iterrows()}
@@ -137,7 +136,7 @@ class Screening():
         if type_ in self.SIMULATION_TYPES['INFO']:
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
         elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
-            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME'])
+            df_info = pd.read_csv(os.path.join(MATSCREEN, "data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME'])
             df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="left", on="STRUCTURE_NAME")
             df['UnitCell'] = df['UnitCell'].fillna("1 1 1")
             df['Volume [nm^3]'] = df['Volume [nm^3]'].fillna(Threshold_volume)
@@ -171,7 +170,7 @@ class Screening():
             path_to_Scripts = os.path.join(path_to_work, 'Scripts')
             if not os.path.exists(path_to_Scripts):
                 os.mkdir(path_to_Scripts)
-            path_to_INPUT = os.path.join(SOURCE_DIR, "../Raspa_screening_templates/INPUT_%s"%type_)
+            path_to_INPUT = os.path.join(MATSCREEN, "Raspa_screening_templates/INPUT_%s"%type_)
             INPUT_file = self.generate(path_to_INPUT, **kwargs)
             if type_ == 'coad':
                 index = 0
@@ -181,8 +180,8 @@ class Screening():
                                 MoleculeDefinition               TraPPE
                                 TranslationProbability           0.5
                                 IdentityChangeProbability        1.0
-                                  NumberOfIdentityChanges        2
-                                  IdentityChangesList            0 1
+                                NumberOfIdentityChanges          2
+                                IdentityChangesList              0 1
                                 SwapProbability                  1.0
                                 CreateNumberOfMolecules          0
                                 MolFraction                      %s
@@ -195,20 +194,20 @@ class Screening():
                 if not os.path.exists(os.path.join(path_to_work, "RestartInitial/System_0")):
                     os.mkdir(os.path.join(path_to_work, "RestartInitial"))
                     os.mkdir(os.path.join(path_to_work, "RestartInitial/System_0"))
-                RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run_%s"%type_), "r").read()
+                RUN_file = open(os.path.join(MATSCREEN, "Raspa_screening_templates/run_%s"%type_), "r").read()
             if type_ == "diffusion":
-                RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run_diffusion"), **kwargs)
+                RUN_file = self.generate(os.path.join(MATSCREEN, "Raspa_screening_templates/run_diffusion"), **kwargs)
                 os.system("mkdir %s/Output"%path_to_work)
             else:
-                RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run"), "r").read()
+                RUN_file = open(os.path.join(MATSCREEN, "Raspa_screening_templates/run"), "r").read()
 
-            self.path_to_run = os.path.join(path_to_work,"run")
+            self.path_to_run = os.path.join(path_to_work, "run")
             self.write_file(RUN_file, self.path_to_run)
             if type_ != 'grid':
-                DATA_file = self.generate(os.path.join(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_), **kwargs)
+                DATA_file = self.generate(os.path.join(MATSCREEN, "Raspa_screening_templates/data_%s.sh"%type_), **kwargs)
                 self.write_file(DATA_file, os.path.join(path_to_work,"data.sh"))
                 if type_ == 'info':
-                    os.system("cp %s %s"%(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/merge_info.py"), os.path.join(path_to_work,"merge_info.py")))
+                    os.system("cp %s %s"%(os.path.join(MATSCREEN, "Raspa_screening_templates/merge_info.py"), os.path.join(path_to_work,"merge_info.py")))
 
         elif type_ in self.SIMULATION_TYPES["ZEO++"]:
             path_to_Output = os.path.join(path_to_work, 'Output')
@@ -217,14 +216,14 @@ class Screening():
             if type_ == "voronoi":
                 if not os.path.exists(os.path.join(path_to_work, 'Coordinates')):
                     os.mkdir(os.path.join(path_to_work, 'Coordinates'))
-                os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Zeo++_screening_templates/extract_vertex.py"),path_to_work))
-            RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Zeo++_screening_templates/run_%s"%type_), **kwargs)
+                os.system("cp %s %s"%(os.path.join(MATSCREEN, "Zeo++_screening_templates/extract_vertex.py"),path_to_work))
+            RUN_file = self.generate(os.path.join(MATSCREEN, "Zeo++_screening_templates/run_%s"%type_), **kwargs)
             self.path_to_run = os.path.join(path_to_work,"run")
             self.write_file(RUN_file, self.path_to_run)
 
         elif type_ in self.SIMULATION_TYPES["HOME"]:
             self.path_to_run = os.path.join(path_to_work,"run.py")
-            os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Home_screening_templates/run_%s.py"%type_),self.path_to_run))
+            os.system("cp %s %s"%(os.path.join(MATSCREEN, "Home_screening_templates/run_%s.py"%type_),self.path_to_run))
             if type_ == "findsym":
                 path_to_Output = os.path.join(path_to_work, 'Output')
                 if not os.path.exists(path_to_Output):
@@ -235,12 +234,14 @@ class Screening():
 
         elif type_ in self.SIMULATION_TYPES["CPP"]:
             self.path_to_run = os.path.join(path_to_work,"run.sh")
-            RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Cpp_screening_templates/run_%s.sh"%type_), **kwargs)
+            RUN_file = self.generate(os.path.join(MATSCREEN, "Cpp_screening_templates/run_%s.sh"%type_), **kwargs)
             self.write_file(RUN_file, self.path_to_run)
             if type_ in ['csurface_acc','csurface_sa']:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.acc_coeff),index=False)
             else:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
+
+        os.system("cp %s %s"%(os.path.join(MATSCREEN, "set_environment"), path_to_work))
 
 
     @staticmethod
@@ -315,12 +316,12 @@ class Screening():
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
 
     def glost_list(self):
-        """ Print out glost list for mpirun""" 
+        """ Print out glost list for mpirun"""
         df = pd.DataFrame.from_records(self.data)
         struc = df.iloc[:,0]
         opt = df.iloc[:,1]
         if self.home:
-            command = "python3 %s \"%s\" %s %s %s "%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff) + struc + " \"" + opt + "\"" 
+            command = "python3 %s \"%s\" %s %s %s "%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff) + struc + " \"" + opt + "\""
         else:
             command = "bash %s "%(self.path_to_run) + struc + " \"" + opt + "\""
         command.to_frame().to_csv(os.path.join(self.OUTPUT_PATH,"glost.list"),index=False,header=False, quoting=csv.QUOTE_NONE, quotechar='')

@@ -1,6 +1,6 @@
 #! /bin/bash
 node=$(hostname)
-source ${dirname $(dirname $0)}/set_environment
+source set_environment
 
 cd "$(dirname "$0")"
 ${ZEO_DIR}/network -ha -block ${2} N_cycles Output/${1}.block ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&

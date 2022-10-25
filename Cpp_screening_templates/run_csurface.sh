@@ -1,5 +1,5 @@
 #!/bin/bash
-source ${dirname $(dirname $0)}/set_environment
+source set_environment
 
 cd "$(dirname "$0")"
 
