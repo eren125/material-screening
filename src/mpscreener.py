@@ -241,7 +241,7 @@ class Screening():
             else:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
 
-        os.system("cp %s %s"%(os.path.join(MATSCREEN, "set_environment"), path_to_work))
+        os.system("bash %s %s"%(os.path.join(MATSCREEN, "copy_env.sh"), os.path.join(path_to_work, "set_environment")))
 
 
     @staticmethod

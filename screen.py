@@ -77,12 +77,12 @@ CYCLES = int(args.Ncycles)
 COMPOSITION = args.composition
 radius = float(args.radius)
 RESTART = args.restart
-    
+
 nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
 # initialising the screening procedure
-screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperature=temperature, cutoff=cutoff,probe_radius=radius, 
-         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH, 
+screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperature=temperature, cutoff=cutoff,probe_radius=radius,
+         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH,
          RESTART=RESTART)
 # launching the screening
 if args.glost_list in ['yes','y']:
