@@ -303,14 +303,14 @@ class Screening():
         if self.type_ == "surface_sample":
             supercell_wrap = self.n_sample
         if len(self.NODES) == 0:
-            command = "python3 %s %s %s %s %s \"%s\" \"%s\" "%(self.path_to_run, structure_name, self.cutoff, self.forcefield, self.temperature, self.atoms, supercell_wrap)
+            command = "%s %s %s %s %s %s \"%s\" \"%s\" "%(sys.executable, self.path_to_run, structure_name, self.cutoff, self.forcefield, self.temperature, self.atoms, supercell_wrap)
             print(command)
         else:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s \"python3 %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \""%(HOST,self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
+            command = "ssh %s \"%s %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \""%(HOST, sys.executable, self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
         os.system(command)
         output_dict = {'Structures':[structure_name], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
@@ -321,7 +321,7 @@ class Screening():
         struc = df.iloc[:,0]
         opt = df.iloc[:,1]
         if self.home:
-            command = "python3 %s \"%s\" %s %s %s "%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff) + struc + " \"" + opt + "\""
+            command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff) + struc + " \"" + opt + "\""
         else:
             command = "bash %s "%(self.path_to_run) + struc + " \"" + opt + "\""
         command.to_frame().to_csv(os.path.join(self.OUTPUT_PATH,"glost.list"),index=False,header=False, quoting=csv.QUOTE_NONE, quotechar='')

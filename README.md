@@ -76,4 +76,4 @@ Using ```screen.py``` command line tool to generate adsorption or coadsorption s
 
 Example of usage in ```job_example.sh```
 
-Need help? Type: ```python3 screen.py --help```
+Need help? Execute: ```screen.py --help```
