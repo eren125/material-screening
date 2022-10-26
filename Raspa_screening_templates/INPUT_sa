@@ -1,0 +1,18 @@
+SimulationType                MonteCarlo
+NumberOfCycles                N_cycles
+NumberOfInitializationCycles  N_init
+PrintPropertiesEvery          N_print
+RestartFile                   no
+
+Forcefield                    FORCE_FIELD
+
+Framework 0
+ChargeMethod None
+FrameworkName Arg
+UnitCells 1 1 1
+SurfaceAreaProbeDistance Sigma
+
+Component 0 MoleculeName                     MOLECULE
+            MoleculeDefinition               TraPPE
+            SurfaceAreaProbability           1.0
+            CreateNumberOfMolecules          0

@@ -8,7 +8,9 @@ i=1
 for line in `ls Output/System_0/output_*`
 do
   struc=${line/Output\/System\_0\/output\_}
-  struc=${struc/\_+([0-9])*.+([0-9])*.+([0-9])*\_298.000000*.data}
-  grep "\[MOLECULE\] Average Henry coefficient:" $line | sed -e "s/\[MOLECULE\] Average Henry coefficient:/$struc/g" >> Henry.txt
-  grep "\[MOLECULE\] Average  <U_gh>_1-<U_h>_0:" $line | sed -e "s/\[MOLECULE\] Average  <U_gh>_1-<U_h>_0:/$struc/g" >> Energy.txt
+  struc=${struc/\_+([0-99]).+([0-99]).+([0-99])\_298.000000_0.data}
+  grep "\[xenon\] Average Henry coefficient:" $line | sed -e "s/\[xenon\] Average Henry coefficient:/$struc/g" >> Henry.txt
+  grep "\[xenon\] Average  <U_gh>_1-<U_h>_0:" $line | sed -e "s/\[xenon\] Average  <U_gh>_1-<U_h>_0:/$struc/g" >> Energy.txt
+  grep "total time:" $line | sed -e "s/total time:/$struc/g" >> time.txt
 done
+

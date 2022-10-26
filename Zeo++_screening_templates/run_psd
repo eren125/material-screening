@@ -1,0 +1,8 @@
+#! /bin/bash
+node=$(hostname)
+export MATSCREEN=$CCCSCRATCHDIR/material-screening
+source ${MATSCREEN}/set_environment
+
+cd "$(dirname "$0")" 
+${ZEO_DIR}/network -ha -psd ${2} ${2} N_cycles Output/results_${1}_${2}.psd ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&
+echo "structure ${1} radius ${2} pore Simulation DONE on $node"

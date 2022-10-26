@@ -1,5 +1,6 @@
 import sys
 import os
+import csv
 from time import time
 from textwrap import dedent
 import multiprocessing as mp
@@ -44,6 +45,8 @@ class Screening():
             Threshold_volume (float): threshold at which the volume is considered too big for grid calculations
                                       it consumes too much RAM Memory for the machine currently used
             OUTPUT_PATH        (str): relative path to where the outputs of the simulations will be printed
+            glost_list        (bool): Print a list of commands to be run by glost_launch binary 
+                                      (see https://github.com/cea-hpc/glost.git)
 
         self variables:
             NODES              (str): names of the nodes allocated by the supercalculator
@@ -62,11 +65,11 @@ class Screening():
         """
 
         ### Initialisation of class objects and error catching ###
-        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'widom_nogrid', 'vf', 'sp', 'diffusion'],
+        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'widom_nogrid', 'vf', 'sp', 'diffusion','sa'],
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi','block'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
-                    "CPP"    : ["csurface"]
+                    "CPP"    : ["csurface", "csurface_spiral", "csurface_acc","csurface_sa","count"]
                    }
         try:
             self.NODES = os.environ['NODES']
@@ -120,6 +123,8 @@ class Screening():
         
         current_directory = os.environ['CURRENTDIR']
         self.OUTPUT_PATH = os.path.join(current_directory, OUTPUT_PATH)
+        self.n_sample = cycles
+        self.acc_coeff = probe_radius
 
         self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
         CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius, PATH=self.OUTPUT_PATH)
@@ -133,7 +138,9 @@ class Screening():
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
         elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
             df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME']) 
-            df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="inner", on="STRUCTURE_NAME")
+            df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="left", on="STRUCTURE_NAME")
+            df['UnitCell'] = df['UnitCell'].fillna("1 1 1")
+            df['Volume [nm^3]'] = df['Volume [nm^3]'].fillna(Threshold_volume)
             df = df[df['Volume [nm^3]'] <= Threshold_volume]    
             if type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['CPP']:
                 self.data = df[['STRUCTURE_NAME','UnitCell']].to_records(index=False)
@@ -148,7 +155,6 @@ class Screening():
                 df['supercell_wrap'] = df['UnitCell'].apply(lambda x: x.replace(' ','|'))
                 self.data = df[['STRUCTURE_NAME','supercell_wrap']].to_records(index=False)
                 self.home = True
-                self.n_sample = cycles
 
         pd.DataFrame({'Structures':[],"CPU_time (s)":[]}).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"), index=False)
         print("%s simulation of %s"%(type_,' '.join(MOLECULES)))
@@ -231,7 +237,10 @@ class Screening():
             self.path_to_run = os.path.join(path_to_work,"run.sh")
             RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Cpp_screening_templates/run_%s.sh"%type_), **kwargs)
             self.write_file(RUN_file, self.path_to_run)
-            pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "time":[]}).to_csv('cpp_output.csv',index=False)
+            if type_ in ['csurface_acc','csurface_sa']:
+                pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.acc_coeff),index=False)
+            else:
+                pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
     
 
     @staticmethod
@@ -278,7 +287,7 @@ class Screening():
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s \"bash %s %s \\\"%s\\\"\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL)
+            command = "ssh %s bash \"%s %s \\\"%s\\\"\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL)
         os.system(command)
         output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
@@ -304,6 +313,17 @@ class Screening():
         os.system(command)
         output_dict = {'Structures':[structure_name], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
+
+    def glost_list(self):
+        """ Print out glost list for mpirun""" 
+        df = pd.DataFrame.from_records(self.data)
+        struc = df.iloc[:,0]
+        opt = df.iloc[:,1]
+        if self.home:
+            command = "python3 %s \"%s\" %s %s %s "%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff) + struc + " \"" + opt + "\"" 
+        else:
+            command = "bash %s "%(self.path_to_run) + struc + " \"" + opt + "\""
+        command.to_frame().to_csv(os.path.join(self.OUTPUT_PATH,"glost.list"),index=False,header=False, quoting=csv.QUOTE_NONE, quotechar='')
 
 
     def mp_run(self):

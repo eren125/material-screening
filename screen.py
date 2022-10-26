@@ -50,6 +50,9 @@ parser.add_argument('-r', '--radius', nargs='?', default='1.2',
 parser.add_argument('-R', '--restart', nargs='?', default='no',
                     help='specify if you want to restart from binary files')
 
+parser.add_argument('-g', '--glost_list', nargs='?', default='no',
+                    help='specify if you want to generate a glost list for mprun (cluster only)')
+
 parser.add_argument('-o', '--output_directory', nargs='?', default='.',
                     help='specify the directory in which you want the simulation files to be installed. Default=. (current directory)')
 
@@ -69,11 +72,16 @@ CYCLES = int(args.Ncycles)
 COMPOSITION = args.composition
 radius = float(args.radius)
 RESTART = args.restart
-
+    
 nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
 # initialising the screening procedure
 screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperature=temperature, cutoff=cutoff,probe_radius=radius, 
-         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH, RESTART=RESTART)
+         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH, 
+         RESTART=RESTART)
 # launching the screening
-screen.mp_run()
+if args.glost_list in ['yes','y']:
+  screen.glost_list()
+else :
+  screen.mp_run()
+

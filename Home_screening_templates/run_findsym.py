@@ -123,8 +123,8 @@ except Exception as e:
     sys.exit(1)
 
 # precs = [float(p) for p in sys.argv[2].split()]
-t = [1, 2, 3, 5, 7]
-precs = [1e-10, 1e-9, 1e-8, 1e-7, 1e-6] + [i * j for i in [1e-5, 1e-4, 1e-3, 1e-2, 1e-1] for j in t]
+t = [1, 5]
+precs = [1e-10, 1e-9, 1e-8, 1e-7, 1e-6] + [i * j for i in [1e-5, 1e-4] for j in t] 
 
 # print('# Tolerance\tSpace group')
 old = 'P1 (1)'
@@ -135,10 +135,10 @@ for prec in precs:
         prec_final = prec
         old = s
 
+basename = os.path.basename(path).replace('.cif','')
 if s == 'P1 (1)':
-    prec_final = precs[0]
-
-# print('%.2e\t%s'%(prec_final,s))
-writeCIF(cell, prec_final, os.path.basename(path))
+    os.system("cp %s %s"%(path,'Output/' + basename + '_1.cif'))
+else :
+    writeCIF(cell, prec_final, basename)
 
 sys.exit(0)
