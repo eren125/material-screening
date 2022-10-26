@@ -72,8 +72,14 @@ Zeolite, Porous Polymer Networks and Covalent Organic Framework can also be foun
 
 ## Running your first simulations
 
-Using ```screen.py``` command line tool to generate adsorption or coadsorption simulation files and then run them
+Using `screen.py` command line tool to generate adsorption or coadsorption simulation files and then run them.
 
-Example of usage in ```job_example.sh```
+Once the structures have been decided and put in `${RASPA_DIR}/share/raspa/structures/cif/`,
+put their names in a one-column CSV file with "Structures" as its only header.
+Then, execute `screen.py` with the `-t info` option to extract the information necessary
+to run subsequent simulations. You should then launch `./data.sh` to obtain an `info.csv`
+file which should replace the one in `${MATSCREEN}/data/`.
 
-Need help? Execute: ```screen.py --help```
+Example of usage in `job_example.sh`
+
+Need help? Execute: `screen.py --help`.

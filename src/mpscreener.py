@@ -68,7 +68,7 @@ class Screening():
         ### Initialisation of class objects and error catching ###
         self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'widom_nogrid', 'vf', 'sp', 'diffusion','sa'],
                     "INFO"   : ['info'],
-                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi','block'],
+                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi', 'block'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
                     "CPP"    : ["csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
                    }
@@ -104,13 +104,11 @@ class Screening():
         else:
             mole_fraction = []
 
-        df_mol = pd.read_csv(os.path.join(MATSCREEN, 'data/molecules.csv'), encoding='utf-8')
+        molecules_path = os.path.join(MATSCREEN, 'data/molecules.csv')
+        df_mol = pd.read_csv(molecules_path, encoding='utf-8')
         if not all([molecule in list(df_mol['MOLECULE']) for molecule in MOLECULES]):
-            raise ValueError('one of the molecules %s not in adsorbent list' %(' '.join(MOLECULES)))
+            raise ValueError('One of the molecules %s not in adsorbent list defined in %s'%(' '.join(MOLECULES), molecules_path))
         mol2atoms = {row['MOLECULE']: row['ATOMS'] for index,row in df_mol.iterrows()}
-
-        if not all([M in list(df_mol['MOLECULE']) for M in MOLECULES]):
-            raise ValueError("The molecules mentioned are not supported by the code, see the data directory in the source directory")
 
         print_every = cycles // 10
         init_cycles = min(cycles // 2, 10000)
@@ -125,8 +123,22 @@ class Screening():
         self.n_sample = cycles
         self.acc_coeff = probe_radius
 
-        self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles,
-        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius, REJECT=rejection, PATH=self.OUTPUT_PATH)
+        self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict,
+                                                     FORCE_FIELD=force_field,
+                                                     N_cycles=cycles,
+                                                     N_print=print_every,
+                                                     N_init=init_cycles,
+                                                     CUTOFF=cutoff,
+                                                     PRESSURES=' '.join(pressures),
+                                                     TEMPERATURE=temperature,
+                                                     N_ATOMS=N_ATOMS,
+                                                     ATOMS=ATOMS,
+                                                     MOLECULE=MOLECULES[0],
+                                                     RESTART=RESTART,
+                                                     TIMESTEP=probe_radius,
+                                                     REJECT=rejection,
+                                                     PATH=self.OUTPUT_PATH,
+                                                     )
 
         df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
         df_structures = df_structures[['Structures']]

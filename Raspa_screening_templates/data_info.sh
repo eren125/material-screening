@@ -12,6 +12,14 @@ grep -H -A 3 "Box\[0\]" Output/System_0/* > matrix_temp.txt
 sed -n "2~5p;3~5p;4~5p" matrix_temp.txt > matrix.txt
 rm matrix_temp.txt
 
-THISDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-source `dirname $THISDIR`/set_environment
-$MATSCREEN_PYTHON merge_info.py
+if [[ $MATSCREEN ]]; then
+    source $MATSCREEN/set_environment
+    $MATSCREEN_PYTHON merge_info.py
+else
+    if [[ $MATSCREEN_PYTHON ]]; then
+        $MATSCREEN_PYTHON merge_info.py
+    else
+        echo "Environment variables MATSCREEN and MATSCREEN_PYTHON not found, reverting to default python3."
+        python3 merge_info.py
+    fi
+fi
