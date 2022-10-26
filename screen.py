@@ -45,7 +45,10 @@ parser.add_argument('-c', '--composition', nargs=2, default=None,
                     help='specify the composition of each adsorbent molecule for coadsorption simulation\nExample: 90 10. Default=None')
 
 parser.add_argument('-r', '--radius', nargs='?', default='1.2',
-                    help='specify the radius of the probe in Zeo++ calculations\nDefault: 1.2 angstrom')
+                    help='specify the radius of the probe in Zeo++ calculations or the sampling sphere relative radius\nDefault: 1.2')
+
+parser.add_argument('-rj', '--rejection', nargs='?', default='0.85',
+                    help='specify the rejection condition relative radius in surface simulations \nDefault: 0.85')
 
 parser.add_argument('-R', '--restart', nargs='?', default='no',
                     help='specify if you want to restart from binary files')

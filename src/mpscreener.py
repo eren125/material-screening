@@ -16,7 +16,7 @@ sys.path.append(SOURCE_DIR)
 
 class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
-    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH=".", RESTART="no"):
+    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, rejection=0.85, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH=".", RESTART="no"):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -69,7 +69,7 @@ class Screening():
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi','block'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
-                    "CPP"    : ["csurface", "csurface_spiral", "csurface_acc","csurface_sa","count"]
+                    "CPP"    : ["csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
                    }
         try:
             self.NODES = os.environ['NODES']
@@ -127,7 +127,7 @@ class Screening():
         self.acc_coeff = probe_radius
 
         self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
-        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius, PATH=self.OUTPUT_PATH)
+        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius, REJECT=rejection, PATH=self.OUTPUT_PATH)
 
         df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
         df_structures = df_structures[['Structures']]
