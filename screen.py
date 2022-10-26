@@ -1,5 +1,9 @@
-#!/usr/bin/bash
-''''exec $MATSCREEN_PYTHON "$0" "$@" # '''
+#!/usr/bin/env python3
+import os
+import sys
+if not os.environ.get('MATSCREEN_PYTHON_TOKEN', False):
+    SET_ENVIRONMENT = os.path.join(os.path.dirname(__file__), 'set_environment')
+    exit(os.system("echo 'source %s; MATSCREEN_PYTHON_TOKEN=1 $MATSCREEN_PYTHON %s' | bash"%(SET_ENVIRONMENT, ' '.join(sys.argv))))
 
 import argparse
 import textwrap

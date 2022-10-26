@@ -6,8 +6,7 @@ export ZEO_DIR=~/zeo++-0.3
 export CPP_DIR=~/surface-csampler
 export GLOST_DIR=~/glost
 
-# Optional: fill with the python executable with the correct environment to be able to
-# directly execute $MATSCREEN/screen.py from your console.
+# Fill with the python executable with the correct environment (satisfying requirements.txt)
 export MATSCREEN_PYTHON=/usr/bin/python3
 
 # The following lines should not be modified (unless you know what you are doing).

@@ -38,7 +38,7 @@ class load():
             structure_name (str): name of the structure as referenced in the cif file in the Raspa directory
             supercell (list): list of ints representing the size of each unicell vector for the supercell
             system of Raspa2 and Zeo++ (different from the one used in pymatgen)
-        
+
         Returns:
         """
         if not os.path.exists("Coordinates"):
@@ -83,7 +83,7 @@ class load():
         """A function to sample the accessible surfaces and calculate the energies associated
         Args:
             structure_name (str): the name of the structure (need to be present in the RASPA directory)
-            
+
         """
         cif_file = self._load_cif_file(structure_name, self.RASPA_DIR)
         structure = CifParser.from_string(cif_file).get_structures(primitive=False)[0]
@@ -250,7 +250,7 @@ class load():
         coordinates to cartesian coordinates
         Args:
             structure (pymatgen.core.Structure): pymatgen parsed structure extracted from cif file. It contains the structures' lattice properties used to determine the final lattice_matrix
-        Output: 
+        Output:
             lattice_matrix
         """
         a, b, c = structure.lattice.abc
