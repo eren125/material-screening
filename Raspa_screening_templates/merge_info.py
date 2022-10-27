@@ -1,6 +1,6 @@
 import pandas as pd
 
-cutoff = 12
+cutoff = CUTOFF
 
 lines = open('boxlengths.txt').readlines()
 df_box = pd.DataFrame([line.split() for line in lines])

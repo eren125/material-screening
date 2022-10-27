@@ -219,7 +219,8 @@ class Screening():
                 DATA_file = self.generate(os.path.join(MATSCREEN, "Raspa_screening_templates/data_%s.sh"%type_), **kwargs)
                 self.write_file(DATA_file, os.path.join(path_to_work,"data.sh"))
                 if type_ == 'info':
-                    os.system("cp %s %s"%(os.path.join(MATSCREEN, "Raspa_screening_templates/merge_info.py"), os.path.join(path_to_work,"merge_info.py")))
+                    merge_file = self.generate(os.path.join(MATSCREEN, "Raspa_screening_templates/merge_info.py"), **kwargs)
+                    self.write_file(merge_file, os.path.join(path_to_work,"merge_info.py"))
 
         elif type_ in self.SIMULATION_TYPES["ZEO++"]:
             path_to_Output = os.path.join(path_to_work, 'Output')
