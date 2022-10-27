@@ -1,6 +1,6 @@
 import sys
-import pandas as pd 
-import numpy as np 
+import pandas as pd
+import numpy as np
 
 struc = sys.argv[1]
 

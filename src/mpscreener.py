@@ -10,12 +10,13 @@ import pandas as pd
 
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SOURCE_DIR)
+MATSCREEN = os.path.dirname(SOURCE_DIR)
 
-# TODO 
-# Debug the file writting of Home type simulations (bug when several processes write on a same file)
+# TODO
+# Debug the file writing of Home type simulations (bug when several processes write on a same file)
 
 class Screening():
-    def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None, 
+    def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None,
     pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, rejection=0.85, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH=".", RESTART="no"):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
@@ -23,29 +24,29 @@ class Screening():
         If setup is True, creates file for the simulation INPUT and run mainly (data for post-processing and RestartInitial for single point calculations)
 
         Args:
-            structures_file    (str): relative path to the csv file containing all the structures, 
+            structures_file    (str): relative path to the csv file containing all the structures,
                                       the headers must contain "Structures"
             procs_per_node     (int): number of processors available in each node for a given calculator
             nprocs             (int): number of processes to be run at the same time
             type_              (str): type of simulation the user wants to carry out. Currently available:
                                       grid calculation via 'grid', GCMC via 'ads' 'coad', NVT MC via 'ent',
-                                      Widom's insertion via 'widom', helium void fraction via 'vf', 
+                                      Widom's insertion via 'widom', helium void fraction via 'vf',
                                       Zeo++ via 'surface' 'volume' 'pore' 'channel' and global information via 'info'
-            force_field        (str): force field used for the molecular simulations, 
-                                      it must be defined in the Raspa directory 
+            force_field        (str): force field used for the molecular simulations,
+                                      it must be defined in the Raspa directory
             MOLECULES         (list): list of molecules (str) to be adsorbed on the materials
             composition       (list): list of mole fractions for the molecules defined in MOLECULES
                                       must have the same length as MOLECULES, and sum must equal to 1
             pressures         (list): list of pressures (float) in pascal to be simulated
             TEMP             (float): temperature in kelvin for the Raspa2 simulations (default = 298.0 K)
             cycles             (int): number of prodution cycles used for the Raspa2 simulations
-                                      equilibration cycles are fixed to 10k for now (to improve)                 
+                                      equilibration cycles are fixed to 10k for now (to improve)
             cutoff           (float): sets the van der Waals cutoff in Raspa2 simulation
             probe_radius     (float): radius of the probe in angström considered in Zeo++ simulations
             Threshold_volume (float): threshold at which the volume is considered too big for grid calculations
                                       it consumes too much RAM Memory for the machine currently used
             OUTPUT_PATH        (str): relative path to where the outputs of the simulations will be printed
-            glost_list        (bool): Print a list of commands to be run by glost_launch binary 
+            glost_list        (bool): Print a list of commands to be run by glost_launch binary
                                       (see https://github.com/cea-hpc/glost.git)
 
         self variables:
@@ -59,15 +60,15 @@ class Screening():
             generate      : generate an input string according to the file specified
             write_file    : print out a string in a file at the specified output path
             run           : function that takes the framework's name and the smallest unitcell for a 12 angstrom cut-off
-                            and runs the corresponding simulation according to the run bash file 
-            run_mp        : function that calls `run` multiple times in parallel. mp.Pool distributes the jobs 
-                            to $nprocs workers so that every job  
+                            and runs the corresponding simulation according to the run bash file
+            run_mp        : function that calls `run` multiple times in parallel. mp.Pool distributes the jobs
+                            to $nprocs workers so that every job
         """
 
         ### Initialisation of class objects and error catching ###
         self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'widom_nogrid', 'vf', 'sp', 'diffusion','sa'],
                     "INFO"   : ['info'],
-                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi','block'],
+                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi', 'block'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
                     "CPP"    : ["csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
                    }
@@ -76,16 +77,14 @@ class Screening():
         except:
             self.NODES = ''
         self.NODES = self.NODES.split()
-        try:
-            os.system("source %s/../set_environment"%SOURCE_DIR)
-        except:
-            raise FileNotFoundError("Please check your set_environement file in %s"%SOURCE_DIR)
+        if not os.path.exists(os.path.join(MATSCREEN, "set_environment")):
+            raise FileNotFoundError("Please check your set_environement file in %s"%MATSCREEN)
         if len(self.NODES)==0:
             if procs_per_node > nprocs:
-                raise ValueError('More processes at a time than proccessors available!!!')
+                raise ValueError('More processes at a time than processors available!!!')
         else:
             if len(self.NODES)*procs_per_node > nprocs:
-                raise ValueError('More processes at a time than proccessors available!!!')
+                raise ValueError('More processes at a time than processors available!!!')
         self.nprocs = nprocs
         self.type_ = type_
         available_types = sum(self.SIMULATION_TYPES.values(), [])
@@ -105,13 +104,11 @@ class Screening():
         else:
             mole_fraction = []
 
-        df_mol = pd.read_csv(os.path.join(SOURCE_DIR, '../data/molecules.csv'), encoding='utf-8')
+        molecules_path = os.path.join(MATSCREEN, 'data/molecules.csv')
+        df_mol = pd.read_csv(molecules_path, encoding='utf-8')
         if not all([molecule in list(df_mol['MOLECULE']) for molecule in MOLECULES]):
-            raise ValueError('one of the molecules %s not in adsorbent list' %(' '.join(MOLECULES)))
+            raise ValueError('One of the molecules %s not in adsorbent list defined in %s'%(' '.join(MOLECULES), molecules_path))
         mol2atoms = {row['MOLECULE']: row['ATOMS'] for index,row in df_mol.iterrows()}
-
-        if not all([M in list(df_mol['MOLECULE']) for M in MOLECULES]):
-            raise ValueError("The molecules mentioned are not supported by the code, see the data directory in the source directory")
 
         print_every = cycles // 10
         init_cycles = min(cycles // 2, 10000)
@@ -120,28 +117,43 @@ class Screening():
         molecule_dict = {}
         for i in range(len(mole_fraction)):
             molecule_dict[MOLECULES[i]] = mole_fraction[i]
-        
-        current_directory = os.environ['CURRENTDIR']
+
+        current_directory = os.getcwd()
         self.OUTPUT_PATH = os.path.join(current_directory, OUTPUT_PATH)
         self.n_sample = cycles
         self.acc_coeff = probe_radius
 
-        self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict, FORCE_FIELD=force_field, N_cycles=cycles, N_print=print_every, N_init=init_cycles, 
-        CUTOFF=cutoff, PRESSURES=' '.join(pressures), TEMPERATURE=temperature, N_ATOMS=N_ATOMS, ATOMS=ATOMS, MOLECULE=MOLECULES[0], RESTART=RESTART, TIMESTEP=probe_radius, REJECT=rejection, PATH=self.OUTPUT_PATH)
+        self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict,
+                                                     FORCE_FIELD=force_field,
+                                                     N_cycles=cycles,
+                                                     N_print=print_every,
+                                                     N_init=init_cycles,
+                                                     CUTOFF=cutoff,
+                                                     PRESSURES=' '.join(pressures),
+                                                     TEMPERATURE=temperature,
+                                                     N_ATOMS=N_ATOMS,
+                                                     ATOMS=ATOMS,
+                                                     MOLECULE=MOLECULES[0],
+                                                     RESTART=RESTART,
+                                                     TIMESTEP=probe_radius,
+                                                     REJECT=rejection,
+                                                     PATH=self.OUTPUT_PATH,
+                                                     )
 
         df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
         df_structures = df_structures[['Structures']]
         df_structures['STRUCTURE_NAME'] = df_structures['Structures'].str.replace('.cif','', regex=False)
-        
+
         self.home = False
+        self.forcefield = force_field
         if type_ in self.SIMULATION_TYPES['INFO']:
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
         elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
-            df_info = pd.read_csv(os.path.join(SOURCE_DIR, "../data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME']) 
+            df_info = pd.read_csv(os.path.join(MATSCREEN, "data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME'])
             df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="left", on="STRUCTURE_NAME")
             df['UnitCell'] = df['UnitCell'].fillna("1 1 1")
             df['Volume [nm^3]'] = df['Volume [nm^3]'].fillna(Threshold_volume)
-            df = df[df['Volume [nm^3]'] <= Threshold_volume]    
+            df = df[df['Volume [nm^3]'] <= Threshold_volume]
             if type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['CPP']:
                 self.data = df[['STRUCTURE_NAME','UnitCell']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['ZEO++']:
@@ -149,7 +161,6 @@ class Screening():
                 self.data = df[['STRUCTURE_NAME','ProbeRadius']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['HOME']:
                 self.atoms = '|'.join([mol2atoms[molecule] for molecule in MOLECULES])
-                self.forcefield = force_field
                 self.temperature = temperature
                 self.cutoff = float(cutoff)
                 df['supercell_wrap'] = df['UnitCell'].apply(lambda x: x.replace(' ','|'))
@@ -171,7 +182,7 @@ class Screening():
             path_to_Scripts = os.path.join(path_to_work, 'Scripts')
             if not os.path.exists(path_to_Scripts):
                 os.mkdir(path_to_Scripts)
-            path_to_INPUT = os.path.join(SOURCE_DIR, "../Raspa_screening_templates/INPUT_%s"%type_)
+            path_to_INPUT = os.path.join(MATSCREEN, "Raspa_screening_templates/INPUT_%s"%type_)
             INPUT_file = self.generate(path_to_INPUT, **kwargs)
             if type_ == 'coad':
                 index = 0
@@ -181,11 +192,11 @@ class Screening():
                                 MoleculeDefinition               TraPPE
                                 TranslationProbability           0.5
                                 IdentityChangeProbability        1.0
-                                  NumberOfIdentityChanges        2
-                                  IdentityChangesList            0 1
+                                NumberOfIdentityChanges          2
+                                IdentityChangesList              0 1
                                 SwapProbability                  1.0
                                 CreateNumberOfMolecules          0
-                                MolFraction                      %s  
+                                MolFraction                      %s
                     """%(index,key,value))
                     index += 1
             self.write_file(INPUT_file, os.path.join(path_to_work, "INPUT"))
@@ -195,20 +206,20 @@ class Screening():
                 if not os.path.exists(os.path.join(path_to_work, "RestartInitial/System_0")):
                     os.mkdir(os.path.join(path_to_work, "RestartInitial"))
                     os.mkdir(os.path.join(path_to_work, "RestartInitial/System_0"))
-                RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run_%s"%type_), "r").read()
+                RUN_file = open(os.path.join(MATSCREEN, "Raspa_screening_templates/run_%s"%type_), "r").read()
             if type_ == "diffusion":
-                RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run_diffusion"), **kwargs)
+                RUN_file = self.generate(os.path.join(MATSCREEN, "Raspa_screening_templates/run_diffusion"), **kwargs)
                 os.system("mkdir %s/Output"%path_to_work)
             else:
-                RUN_file = open(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/run"), "r").read()
-            
-            self.path_to_run = os.path.join(path_to_work,"run")
+                RUN_file = open(os.path.join(MATSCREEN, "Raspa_screening_templates/run"), "r").read()
+
+            self.path_to_run = os.path.join(path_to_work, "run")
             self.write_file(RUN_file, self.path_to_run)
             if type_ != 'grid':
-                DATA_file = self.generate(os.path.join(SOURCE_DIR,"../Raspa_screening_templates/data_%s.sh"%type_), **kwargs)
+                DATA_file = self.generate(os.path.join(MATSCREEN, "Raspa_screening_templates/data_%s.sh"%type_), **kwargs)
                 self.write_file(DATA_file, os.path.join(path_to_work,"data.sh"))
                 if type_ == 'info':
-                    os.system("cp %s %s"%(os.path.join(SOURCE_DIR, "../Raspa_screening_templates/merge_info.py"), os.path.join(path_to_work,"merge_info.py")))
+                    os.system("cp %s %s"%(os.path.join(MATSCREEN, "Raspa_screening_templates/merge_info.py"), os.path.join(path_to_work,"merge_info.py")))
 
         elif type_ in self.SIMULATION_TYPES["ZEO++"]:
             path_to_Output = os.path.join(path_to_work, 'Output')
@@ -217,31 +228,33 @@ class Screening():
             if type_ == "voronoi":
                 if not os.path.exists(os.path.join(path_to_work, 'Coordinates')):
                     os.mkdir(os.path.join(path_to_work, 'Coordinates'))
-                os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Zeo++_screening_templates/extract_vertex.py"),path_to_work))
-            RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Zeo++_screening_templates/run_%s"%type_), **kwargs)
+                os.system("cp %s %s"%(os.path.join(MATSCREEN, "Zeo++_screening_templates/extract_vertex.py"),path_to_work))
+            RUN_file = self.generate(os.path.join(MATSCREEN, "Zeo++_screening_templates/run_%s"%type_), **kwargs)
             self.path_to_run = os.path.join(path_to_work,"run")
             self.write_file(RUN_file, self.path_to_run)
 
         elif type_ in self.SIMULATION_TYPES["HOME"]:
             self.path_to_run = os.path.join(path_to_work,"run.py")
-            os.system("cp %s %s"%(os.path.join(SOURCE_DIR,"../Home_screening_templates/run_%s.py"%type_),self.path_to_run))
+            os.system("cp %s %s"%(os.path.join(MATSCREEN, "Home_screening_templates/run_%s.py"%type_),self.path_to_run))
             if type_ == "findsym":
                 path_to_Output = os.path.join(path_to_work, 'Output')
                 if not os.path.exists(path_to_Output):
                     os.mkdir(path_to_Output)
-            else : 
+            else:
                 pd.DataFrame(columns={"Structure_name":[], "Adsorbent_name":[], "Acessible_average_energy":[], "Minimum_energy":[], "Boltzmann_average_energy":[], "Henry_coeff":[]}).to_csv('home_output.csv',index=False)
                 open(os.path.join(path_to_work, '.output_written.tmp'), 'a')
 
         elif type_ in self.SIMULATION_TYPES["CPP"]:
             self.path_to_run = os.path.join(path_to_work,"run.sh")
-            RUN_file = self.generate(os.path.join(SOURCE_DIR, "../Cpp_screening_templates/run_%s.sh"%type_), **kwargs)
+            RUN_file = self.generate(os.path.join(MATSCREEN, "Cpp_screening_templates/run_%s.sh"%type_), **kwargs)
             self.write_file(RUN_file, self.path_to_run)
             if type_ in ['csurface_acc','csurface_sa']:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.acc_coeff),index=False)
             else:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
-    
+
+        os.system("bash %s %s"%(os.path.join(MATSCREEN, "copy_env.sh"), os.path.join(path_to_work, "set_environment")))
+
 
     @staticmethod
     def generate(path, **replace_string):
@@ -266,7 +279,7 @@ class Screening():
 
         Args:
             generated_file (str): content of the generated file
-            outfile_path (str): path to the output file 
+            outfile_path (str): path to the output file
         """
 
         with open(outfile_path, "w") as outfile:
@@ -281,13 +294,13 @@ class Screening():
         t0 = time()
         FRAMEWORK_NAME,UNITCELL = inputs
         if len(self.NODES) == 0:
-            command = "bash %s %s \"%s\""%(self.path_to_run,FRAMEWORK_NAME,UNITCELL)
+            command = "bash %s %s \"%s\" %s"%(self.path_to_run,FRAMEWORK_NAME,UNITCELL,self.forcefield)
         else:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s bash \"%s %s \\\"%s\\\"\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL)
+            command = "ssh %s \"bash %s %s \\\"%s\\\" %s\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL,self.forcefield)
         os.system(command)
         output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
@@ -302,25 +315,25 @@ class Screening():
         if self.type_ == "surface_sample":
             supercell_wrap = self.n_sample
         if len(self.NODES) == 0:
-            command = "python3 %s %s %s %s %s \"%s\" \"%s\" "%(self.path_to_run, structure_name, self.cutoff, self.forcefield, self.temperature, self.atoms, supercell_wrap)
+            command = "%s %s %s %s %s %s \"%s\" \"%s\" "%(sys.executable, self.path_to_run, structure_name, self.cutoff, self.forcefield, self.temperature, self.atoms, supercell_wrap)
             print(command)
         else:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s \"python3 %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \""%(HOST,self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
+            command = "ssh %s \"%s %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \""%(HOST, sys.executable, self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
         os.system(command)
         output_dict = {'Structures':[structure_name], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
 
     def glost_list(self):
-        """ Print out glost list for mpirun""" 
+        """ Print out glost list for mpirun"""
         df = pd.DataFrame.from_records(self.data)
         struc = df.iloc[:,0]
         opt = df.iloc[:,1]
         if self.home:
-            command = "python3 %s \"%s\" %s %s %s "%(self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff) + struc + " \"" + opt + "\"" 
+            command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff) + struc + " \"" + opt + "\""
         else:
             command = "bash %s "%(self.path_to_run) + struc + " \"" + opt + "\""
         command.to_frame().to_csv(os.path.join(self.OUTPUT_PATH,"glost.list"),index=False,header=False, quoting=csv.QUOTE_NONE, quotechar='')

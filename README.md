@@ -26,9 +26,25 @@ Remember the path to the directory containing the compiled ```network``` binary 
 
 This part explains how you will need to set-up your working environment
 
+### Bash environment
+
+In the ```set_environment``` file, replace the example paths by the accurate ones.
+
+## RASPA environment
+
+All molecules will be taken from ${RASPA_DIR}/share/raspa/molecules/TraPPE, which must
+contain at least the definition for helium (as well as all other molecules you need).
+
+If the folder is missing, simply create it.
+The file for helium can be taken from https://github.com/numat/RASPA2/blob/master/molecules/TraPPE/helium.def.
+
+Any used force field must be present in ${RASPA_DIR}/share/raspa/forcefields. In particular,
+the default force field UFF should be copied from ${MATSCREEN}/forcefield if not already
+present.
+
 ### Python environment
 
-I used a virtual environment for ```python3.8.5``` but it is optional. 
+I used a virtual environment for ```python3.8.5``` but it is optional.
 To set-up a virtual environment and install the required packages in ```requirements.txt```, follow those instructions:
 ```
 ./path_to_python3.8.5/bin/python3.* -m venv path_to_venv
@@ -37,14 +53,6 @@ pip install -r requirements.txt
 ```
 
 If you want to go back to your global python environment type: ``deactivate``
-
-### Raspa2 environment
-
-Modify ```set_environment``` file by replacing ```/home/emmanuel/Simulations``` by your own Raspa2 path.
-
-### Zeo++ environment
-
-Modify ```set_environment``` file by replacing ```/home/emmanuel/Applications/zeo++-0.3``` by your own Zeo++ path.
 
 ## Database of materials and force fields
 
@@ -64,8 +72,14 @@ Zeolite, Porous Polymer Networks and Covalent Organic Framework can also be foun
 
 ## Running your first simulations
 
-Using ```screen.py``` command line tool to generate adsorption or coadsorption simulation files and then run them
+Using `screen.py` command line tool to generate adsorption or coadsorption simulation files and then run them.
 
-Example of usage in ```job_example.sh```
+Once the structures have been decided and put in `${RASPA_DIR}/share/raspa/structures/cif/`,
+put their names in a one-column CSV file with "Structures" as its only header.
+Then, execute `screen.py` with the `-t info` option to extract the information necessary
+to run subsequent simulations. You should then launch `./data.sh` to obtain an `info.csv`
+file which should replace the one in `${MATSCREEN}/data/`.
 
-Need help? Type: ```python3 screen.py --help```
+Example of usage in `job_example.sh`
+
+Need help? Execute: `screen.py --help`.

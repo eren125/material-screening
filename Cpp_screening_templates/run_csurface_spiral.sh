@@ -1,9 +1,8 @@
-#!/bin/bash 
-node=$(hostname)
-export MATSCREEN=$CCCSCRATCHDIR/material-screening
-source ${MATSCREEN}/set_environment
+#!/bin/bash
 
-cd "$(dirname "$0")" 
+source ./set_environment
+
+cd "$(dirname "$0")"
 
 STRUC_DIR=$RASPA_DIR/share/raspa/structures/cif
 

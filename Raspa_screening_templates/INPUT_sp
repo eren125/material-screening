@@ -2,15 +2,15 @@ SimulationType                MonteCarlo
 NumberOfCycles                0
 NumberOfInitializationCycles  0
 PrintPropertiesEvery          0
-RestartFile                   RESTART_MODE 
+RestartFile                   RESTART_MODE
 
-Forcefield                    UFF
+Forcefield                    FORCEFIELD
 
 Ensemble NVT
 
 Framework 0
 FrameworkName Arg
-UnitCells UNITCELL 
+UnitCells UNITCELL
 ExternalTemperature 298.0
 ExternalPressure POINT_NUMBER
 

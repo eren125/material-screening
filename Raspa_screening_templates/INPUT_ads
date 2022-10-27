@@ -2,7 +2,7 @@ SimulationType                MonteCarlo
 NumberOfCycles                N_cycles
 NumberOfInitializationCycles  N_init
 PrintPropertiesEvery          N_print
-RestartFile                   no  
+RestartFile                   no
 
 Forcefield                    FORCE_FIELD
 
@@ -12,7 +12,7 @@ FrameworkName Arg
 CutOffVDW CUTOFF
 UnitCells UNITCELL
 ExternalTemperature TEMPERATURE
-ExternalPressure PRESSURES 
+ExternalPressure PRESSURES
 
 NumberOfGrids N_ATOMS
 GridTypes ATOMS

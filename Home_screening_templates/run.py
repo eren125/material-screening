@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-SOURCE_DIR = os.path.join(os.environ['CCCSCRATCHDIR'], "material-screening")
+SOURCE_DIR = os.environ['MATSCREEN']
 sys.path.append(SOURCE_DIR)
 from src.ljsampler import load_coordinates
 
-Args = sys.argv 
+Args = sys.argv
 
 ATOMS = Args[1].split('|')
 N_atoms = len(ATOMS)
