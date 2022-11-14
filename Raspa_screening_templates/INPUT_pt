@@ -1,19 +1,15 @@
 SimulationType                MonteCarlo
 NumberOfCycles                N_cycles
 NumberOfInitializationCycles  N_init
-PrintPropertiesEvery          N_print
+PrintEvery                    N_print
 RestartFile                   no
 
 Forcefield                    FORCE_FIELD
-EXTRA
-
-Framework 0
-ChargeMethod EWALD
-FrameworkName Arg
-UnitCells 1 1 1
-SurfaceAreaProbeDistance Sigma
 
 Component 0 MoleculeName                     MOLECULE
+            ExtraFrameworkMolecule           yes
             MoleculeDefinition               TraPPE
-            SurfaceAreaProbability           1.0
-            CreateNumberOfMolecules          0
+            TranslationProbability           97.0
+            RotationProbability              0.0
+            RandomTranslationProbability     2.0
+            ParallelTemperingProbability     1.0

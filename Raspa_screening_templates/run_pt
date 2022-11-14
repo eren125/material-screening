@@ -5,6 +5,8 @@ source ./set_environment
 cd "$(dirname "$0")"
 cp INPUT Scripts/simulation_${1}.input
 sed -i "s/Arg/${1}/g;s/UNITCELL/${2}/g;s/FORCEFIELD/${3}/" Scripts/simulation_${1}.input
+NUMCATION=`grep "^Alz_" /home/liozou/RASPA2/simulations/share/raspa/structures/cif/${1}.cif | wc -l`
+sed -i "s/NUMCATION/${NUMCATION}/g" Scripts/simulation_${1}.input
 echo "${1} ${2} ${3} Script DONE on $node"
 ${RASPA_DIR}/bin/simulate -i Scripts/simulation_${1}.input >/dev/null
 echo "${1} ${2} ${3} Simulation DONE on $node"

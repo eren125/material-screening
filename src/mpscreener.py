@@ -16,8 +16,10 @@ MATSCREEN = os.path.dirname(SOURCE_DIR)
 # Debug the file writing of Home type simulations (bug when several processes write on a same file)
 
 class Screening():
-    def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF", MOLECULES=['xenon','krypton'], composition=None,
-    pressures=[101300], temperature=298.0, cycles=2000, cutoff=12.0, rejection=0.85, probe_radius=1.2, Threshold_volume=20, OUTPUT_PATH=".", RESTART="no"):
+    def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF",
+                 MOLECULES=['xenon','krypton'], composition=None, pressures=[101300], temperature=298.0,
+                 cycles=2000, EwaldPrecision=1e-6, cutoff=12.0, rejection=0.85, probe_radius=1.2,
+                 Threshold_volume=0, OUTPUT_PATH=".", RESTART="no", EXTRA="", pt_params=[]):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -29,8 +31,8 @@ class Screening():
             procs_per_node     (int): number of processors available in each node for a given calculator
             nprocs             (int): number of processes to be run at the same time
             type_              (str): type of simulation the user wants to carry out. Currently available:
-                                      grid calculation via 'grid', GCMC via 'ads' 'coad', NVT MC via 'ent',
-                                      Widom's insertion via 'widom', helium void fraction via 'vf',
+                                      grid calculation via 'grid', GCMC via 'ads' 'coad', parallel tempering via 'pt',
+                                      NVT MC via 'ent', Widom's insertion via 'widom', helium void fraction via 'vf',
                                       Zeo++ via 'surface' 'volume' 'pore' 'channel' and global information via 'info'
             force_field        (str): force field used for the molecular simulations,
                                       it must be defined in the Raspa directory
@@ -38,16 +40,20 @@ class Screening():
             composition       (list): list of mole fractions for the molecules defined in MOLECULES
                                       must have the same length as MOLECULES, and sum must equal to 1
             pressures         (list): list of pressures (float) in pascal to be simulated
-            TEMP             (float): temperature in kelvin for the Raspa2 simulations (default = 298.0 K)
+            temperature      (float): temperature in Kelvin for the Raspa2 simulations (default = 298.0 K)
             cycles             (int): number of prodution cycles used for the Raspa2 simulations
                                       equilibration cycles are fixed to 10k for now (to improve)
             cutoff           (float): sets the van der Waals cutoff in Raspa2 simulation
             probe_radius     (float): radius of the probe in angström considered in Zeo++ simulations
+            EwaldPrecision   (float): precision for Ewald summation, or 0 if no Ewald is used
             Threshold_volume (float): threshold at which the volume is considered too big for grid calculations
                                       it consumes too much RAM Memory for the machine currently used
             OUTPUT_PATH        (str): relative path to where the outputs of the simulations will be printed
             glost_list        (bool): Print a list of commands to be run by glost_launch binary
                                       (see https://github.com/cea-hpc/glost.git)
+            EXTRA              (str): extra arguments appended to Raspa2 INPUT file
+            pt_params         (list): list of temperatures for parallel tempering. If type_ == 'pt',
+                                      the 'temperature' field will be disregarded in favor of 'pt_params'
 
         self variables:
             NODES              (str): names of the nodes allocated by the supercalculator
@@ -66,7 +72,7 @@ class Screening():
         """
 
         ### Initialisation of class objects and error catching ###
-        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'widom_nogrid', 'vf', 'sp', 'diffusion','sa'],
+        self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'widom_nogrid', 'vf', 'sp', 'diffusion','sa', 'pt'],
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi', 'block'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
@@ -92,9 +98,6 @@ class Screening():
             raise ValueError(('%s not an option yet. Please choose between: ' +
                 ', '.join(['%s']*len(available_types))) % tuple([type_]+available_types))
 
-        if (type_=='coad') and (not composition):
-            raise ValueError("Please specify a composition, for example: 20 80")
-
         if composition:
             mole_fraction = [round(float(c)/100, 4) for c in composition]
             if sum([float(c) for c in composition]) != 100.0:
@@ -102,6 +105,8 @@ class Screening():
             if len(composition) > len(MOLECULES):
                 raise ValueError("More composition values than molecules specified")
         else:
+            if type_ == 'coad':
+                raise ValueError("Please specify a composition, for example: 20 80")
             mole_fraction = []
 
         molecules_path = os.path.join(MATSCREEN, 'data/molecules.csv')
@@ -110,7 +115,7 @@ class Screening():
             raise ValueError('One of the molecules %s not in adsorbent list defined in %s'%(' '.join(MOLECULES), molecules_path))
         mol2atoms = {row['MOLECULE']: row['ATOMS'] for index,row in df_mol.iterrows()}
 
-        print_every = cycles // 10
+        print_every = 100
         init_cycles = min(cycles // 2, 10000)
         ATOMS = ' '.join([mol2atoms[molecule] for molecule in MOLECULES])
         N_ATOMS = len(ATOMS.split())
@@ -122,6 +127,7 @@ class Screening():
         self.OUTPUT_PATH = os.path.join(current_directory, OUTPUT_PATH)
         self.n_sample = cycles
         self.acc_coeff = probe_radius
+        EWALD = "Ewald\nEwaldPrecision "+str(EwaldPrecision) if EwaldPrecision else "None"
 
         self.generate_files(self.OUTPUT_PATH, type_, molecule_dict=molecule_dict,
                                                      FORCE_FIELD=force_field,
@@ -129,6 +135,7 @@ class Screening():
                                                      N_print=print_every,
                                                      N_init=init_cycles,
                                                      CUTOFF=cutoff,
+                                                     EWALD=EWALD,
                                                      PRESSURES=' '.join(pressures),
                                                      TEMPERATURE=temperature,
                                                      N_ATOMS=N_ATOMS,
@@ -138,6 +145,8 @@ class Screening():
                                                      TIMESTEP=probe_radius,
                                                      REJECT=rejection,
                                                      PATH=self.OUTPUT_PATH,
+                                                     EXTRA=EXTRA,
+                                                     pt_params=pt_params
                                                      )
 
         df_structures = pd.read_csv(os.path.join(current_directory, structures_file), encoding='utf-8')
@@ -152,8 +161,13 @@ class Screening():
             df_info = pd.read_csv(os.path.join(MATSCREEN, "data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME'])
             df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="left", on="STRUCTURE_NAME")
             df['UnitCell'] = df['UnitCell'].fillna("1 1 1")
-            df['Volume [nm^3]'] = df['Volume [nm^3]'].fillna(Threshold_volume)
-            df = df[df['Volume [nm^3]'] <= Threshold_volume]
+            if Threshold_volume > 0:
+                df['Volume [nm^3]'] = df['Volume [nm^3]'].fillna(Threshold_volume)
+                mask = df['Volume [nm^3]'] <= Threshold_volume
+                rejected_threshold = df[~mask]['STRUCTURE_NAME'].tolist()
+                if len(rejected_threshold) > 0:
+                    print('/!\ The following structures were rejected because they were above volume threshold:', rejected_threshold)
+                    df = df[mask]
             if type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['CPP']:
                 self.data = df[['STRUCTURE_NAME','UnitCell']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['ZEO++']:
@@ -199,6 +213,13 @@ class Screening():
                                 MolFraction                      %s
                     """%(index,key,value))
                     index += 1
+            elif type_ == 'pt':
+                pt_params = kwargs['pt_params']
+                INPUT_file += "            CreateNumberOfMolecules"+(" NUMCATION")*len(pt_params)+'\n'
+                path_to_EXTRA = os.path.join(MATSCREEN, "Raspa_screening_templates/EXTRA_%s"%type_)
+                EXTRA_file = self.generate(path_to_EXTRA, **kwargs)
+                for k, temp in enumerate(pt_params):
+                    INPUT_file += "\nFramework %s\n"%(k) + EXTRA_file + "\nExternalTemperature %s\n"%(temp)
             self.write_file(INPUT_file, os.path.join(path_to_work, "INPUT"))
             if type_ == 'sp' or type_ == 'sample':
                 if not os.path.exists(os.path.join(path_to_work, "Coordinates")):
@@ -207,9 +228,11 @@ class Screening():
                     os.mkdir(os.path.join(path_to_work, "RestartInitial"))
                     os.mkdir(os.path.join(path_to_work, "RestartInitial/System_0"))
                 RUN_file = open(os.path.join(MATSCREEN, "Raspa_screening_templates/run_%s"%type_), "r").read()
-            if type_ == "diffusion":
+            elif type_ == "diffusion":
                 RUN_file = self.generate(os.path.join(MATSCREEN, "Raspa_screening_templates/run_diffusion"), **kwargs)
                 os.system("mkdir %s/Output"%path_to_work)
+            elif type_ == 'pt':
+                RUN_file = open(os.path.join(MATSCREEN, "Raspa_screening_templates/run_pt"), "r").read()
             else:
                 RUN_file = open(os.path.join(MATSCREEN, "Raspa_screening_templates/run"), "r").read()
 

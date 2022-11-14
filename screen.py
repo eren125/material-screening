@@ -47,7 +47,10 @@ parser.add_argument('-p', '--pressures', nargs='+', default=['101300'],
 parser.add_argument('-C', '--Cutoff', nargs='?', default=12,
                     help='specify the cut-off of the Raspa2 simulations\nDefault=12')
 
-parser.add_argument('-c', '--composition', nargs=2, default=None,
+parser.add_argument('-E', '--Ewald', nargs='?', default=1e-6,
+                    help='specify the Ewald precision of the Raspa2 simulations (or put 0 for no Ewald) \nDefault=1e-6')
+
+parser.add_argument('-c', '--composition', nargs='*', default=None,
                     help='specify the composition of each adsorbent molecule for coadsorption simulation\nExample: 90 10. Default=None')
 
 parser.add_argument('-r', '--radius', nargs='?', default='1.2',
@@ -55,6 +58,9 @@ parser.add_argument('-r', '--radius', nargs='?', default='1.2',
 
 parser.add_argument('-rj', '--rejection', nargs='?', default='0.85',
                     help='specify the rejection condition relative radius in surface simulations \nDefault: 0.85')
+
+parser.add_argument('-th', '--threshold', nargs='?', default='0',
+                    help='reject structures with a volume above the specified threshold \nDefault=None')
 
 parser.add_argument('-R', '--restart', nargs='?', default='no',
                     help='specify if you want to restart from binary files')
@@ -64,6 +70,12 @@ parser.add_argument('-g', '--glost_list', nargs='?', default='no',
 
 parser.add_argument('-o', '--output_directory', nargs='?', default='.',
                     help='specify the directory in which you want the simulation files to be installed. Default=. (current directory)')
+
+parser.add_argument('-x', '--extra', nargs='*', type=str, default='',
+                    help='extra options, given as a string to insert in Raspa2 INPUT files')
+
+parser.add_argument('-pt', '--pt_params', nargs='*', default=[],
+                    help='specify the number of molecules to add, followed by the list of temperatures, for parallel tempering simulations')
 
 args = parser.parse_args()
 
@@ -76,18 +88,23 @@ OUTPUT_PATH = args.output_directory
 PRESSURES = args.pressures
 temperature = float(args.Temperature)
 cutoff = float(args.Cutoff)
+EwaldPrecision = float(args.Ewald)
 
 CYCLES = int(args.Ncycles)
 COMPOSITION = args.composition
 radius = float(args.radius)
+Threshold_volume = float(args.threshold)
 RESTART = args.restart
+
+EXTRA=' '.join(args.extra).replace(',', '\n')
+pt_params = args.pt_params
 
 nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
 # initialising the screening procedure
 screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperature=temperature, cutoff=cutoff,probe_radius=radius,
          force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH,
-         RESTART=RESTART)
+         EwaldPrecision=EwaldPrecision, Threshold_volume=Threshold_volume, RESTART=RESTART, EXTRA=EXTRA, pt_params=pt_params)
 # launching the screening
 if args.glost_list in ['yes','y']:
   screen.glost_list()

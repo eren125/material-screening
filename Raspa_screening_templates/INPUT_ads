@@ -7,17 +7,19 @@ RestartFile                   no
 Forcefield                    FORCE_FIELD
 
 Framework 0
-ChargeMethod None
+ChargeMethod EWALD
 FrameworkName Arg
 CutOffVDW CUTOFF
 UnitCells UNITCELL
 ExternalTemperature TEMPERATURE
 ExternalPressure PRESSURES
 
+EXTRA
+
 NumberOfGrids N_ATOMS
 GridTypes ATOMS
-SpacingVDWGrid 0.1
-SpacingCoulombGrid 0.1
+SpacingVDWGrid 0.15
+SpacingCoulombGrid 0.15
 UseTabularGrid yes
 
 Component 0 MoleculeName                     MOLECULE

@@ -58,7 +58,7 @@ If you want to go back to your global python environment type: ``deactivate``
 
 ### Force Field
 
-For the forcefield, you can use the default ones in Raspa2 add your own force fields adapted to your applications: You can find in the ```forcefield``` directory an exmaple of UFF forcefield built on this <a href="https://pubs.acs.org/doi/10.1021/ja00051a040">paper</a>. You can also build a Dreiding forcefield from this paper <a href="https://pubs.acs.org/doi/10.1021/j100389a010">paper</a>, usually it is mixed with UFF to complete the missing atoms. 
+For the forcefield, you can use the default ones in Raspa2 add your own force fields adapted to your applications: You can find in the ```forcefield``` directory an exmaple of UFF forcefield built on this <a href="https://pubs.acs.org/doi/10.1021/ja00051a040">paper</a>. You can also build a Dreiding forcefield from this paper <a href="https://pubs.acs.org/doi/10.1021/j100389a010">paper</a>, usually it is mixed with UFF to complete the missing atoms.
 
 ### Material Databases
 

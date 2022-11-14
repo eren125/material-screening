@@ -5,6 +5,7 @@ PrintPropertiesEvery          0
 RestartFile                   RESTART_MODE
 
 Forcefield                    FORCEFIELD
+EXTRA
 
 Ensemble NVT
 
@@ -16,9 +17,9 @@ ExternalPressure POINT_NUMBER
 
 UseTabularGrid yes
 NumberOfGrids N_atoms
-ChargeMethod None
+ChargeMethod EWALD
 GridTypes ATOMS
-SpacingVDWGrid 0.1
+SpacingVDWGrid 0.15
 CutOffVDW 12
 
 Component 0 MoleculeName                     MOLECULE

@@ -1,13 +1,13 @@
-SimulationType MakeGrid
-Forcefield     FORCE_FIELD
-Framework 0
-FrameworkName Arg
 ChargeMethod EWALD
+FrameworkName Arg
 CutOffVDW CUTOFF
-EXTRA
-
 UnitCells UNITCELL
+ExternalPressure PRESSURES
 NumberOfGrids N_ATOMS
 GridTypes ATOMS
+UseTabularGrid yes
 SpacingVDWGrid 0.15
 SpacingCoulombGrid 0.15
+Movies yes
+WriteMoviesEvery N_print
+EXTRA

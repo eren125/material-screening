@@ -7,9 +7,10 @@ ContinueAfterCrash            RESTART
 WriteBinaryRestartFileEvery   N_print
 
 Forcefield                    FORCE_FIELD
+EXTRA
 
 Framework 0
-ChargeMethod None
+ChargeMethod EWALD
 FrameworkName Arg
 CutOffVDW CUTOFF
 UnitCells UNITCELL

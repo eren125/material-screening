@@ -12,7 +12,8 @@ Ensemble                      NVT
 TimeStep		              TIMESTEP
 
 Forcefield                    FORCE_FIELD
-ChargeMethod                  None
+ChargeMethod                  EWALD
+EXTRA
 
 Framework 0
 FrameworkName Arg
@@ -23,8 +24,8 @@ PrintMSDEvery 500000
 
 NumberOfGrids N_ATOMS
 GridTypes ATOMS
-SpacingVDWGrid 0.1
-SpacingCoulombGrid 0.1
+SpacingVDWGrid 0.15
+SpacingCoulombGrid 0.15
 UseTabularGrid yes
 
 Component 0 MoleculeName                     MOLECULE

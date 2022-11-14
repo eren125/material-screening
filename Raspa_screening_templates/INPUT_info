@@ -3,6 +3,7 @@ NumberOfCycles                0
 RestartFile                   no
 
 Forcefield                    FORCEFIELD
+EXTRA
 
 Framework 0
 FrameworkName Arg

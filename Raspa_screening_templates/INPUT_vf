@@ -5,9 +5,10 @@ PrintPropertiesEvery          N_print
 RestartFile                   no
 
 Forcefield                    FORCEFIELD
+EXTRA
 
 Framework 0
-ChargeMethod None
+ChargeMethod EWALD
 FrameworkName Arg
 CutOffVDW CUTOFF
 UnitCells UNITCELL
