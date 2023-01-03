@@ -22,6 +22,11 @@ Remember the path to the directory containing the ```bin/``` directory containin
 Download and compile Zeo++ at http://www.zeoplusplus.org/download.html
 Remember the path to the directory containing the compiled ```network``` binary file
 
+### Glost
+
+Download and compile Glost at https://github.com/cea-hpc/glost
+It is used to run the glost list generated when using the ```-g yes``` of ```screen.py```.
+
 ## Initial set-up
 
 This part explains how you will need to set-up your working environment
