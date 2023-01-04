@@ -1,8 +1,14 @@
 MOLECULE,ATOMS
 xenon,Xe
 krypton,Kr
+argon,Ar
+Na,Na
+K,K
+Li,Li
+Rb,Rb
+Cs,Cs
 N2,N_n2 N_com
 O2,O_o2 O_com
-argon,Ar
 CO2,C_co2 O_co2
+CH4,C_ch4 H_ch4
 water,Ow Hw Mw

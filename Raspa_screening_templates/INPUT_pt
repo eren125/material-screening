@@ -2,14 +2,6 @@ SimulationType                MonteCarlo
 NumberOfCycles                N_cycles
 NumberOfInitializationCycles  N_init
 PrintEvery                    N_print
-RestartFile                   no
+RestartFile                   RESTART
 
 Forcefield                    FORCE_FIELD
-
-Component 0 MoleculeName                     MOLECULE
-            ExtraFrameworkMolecule           yes
-            MoleculeDefinition               TraPPE
-            TranslationProbability           97.0
-            RotationProbability              0.0
-            RandomTranslationProbability     2.0
-            ParallelTemperingProbability     1.0

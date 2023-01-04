@@ -1,13 +1,2 @@
 SimulationType MakeGrid
 Forcefield     FORCE_FIELD
-Framework 0
-FrameworkName Arg
-ChargeMethod EWALD
-CutOffVDW CUTOFF
-EXTRA
-
-UnitCells UNITCELL
-NumberOfGrids N_ATOMS
-GridTypes ATOMS
-SpacingVDWGrid 0.15
-SpacingCoulombGrid 0.15

@@ -80,6 +80,85 @@ Then, execute `screen.py` with the `-t info` option to extract the information n
 to run subsequent simulations. You should then launch `./data.sh` to obtain an `info.csv`
 file which should replace the one in `${MATSCREEN}/data/`.
 
+## Workflow example: simulating adsorption in cationic zeolite
+
+Choose your target cationic zeolites and put their CIF files in
+`${RASPA_DIR}/share/raspa/structures/cif/`
+Store their name in a one-column CSV file with "Structures" as its only header, like in the
+previous paragraph. Give that file a name, for instance "foobar.csv".
+
+Then, prepare electrostatic and VdW grids for each structure, to reduce the computation
+required subsequently: to do so, run
+```
+$MATSCREEN/screen.py -ppn X -n X -N 1 -s $MATSCREEN/data/foobar.csv -f FF -x "EXTRA" -m MOLECULES -t grid
+```
+where:
+- `X` is the number of processes to run in parallel.
+- `FF` is the name of the force field, which should be placed in `${RASPA_DIR}/share/raspa/forcefield`.
+- `EXTRA` is additional command to add in each RASPA INPUT file. For instance,
+  `RemoveAtomNumberCodeFromLabel yes` is useful if your CIF file numbers each atom.
+  If you do not have any command to add, you can remove the `-x "..."` flag.
+- `MOLECULES` is the list of molecules that will be added in the framework. For instance,
+  putting `Na CO2 N2` is necessary to simulate coadsorption of CO2 and N2 on zeolites with
+  sodium cation. If Na cations are already part of the framework, they should be removed
+  from the list.
+
+If the cations are not part of the framework, they should be equilibrated. This can be done
+with parallel tempering using the following command:
+```
+$MATSCREEN/screen.py -ppn X -n X -Ni INIT -N RUN -s $MATSCREEN/data/foobar.csv -f FF -x "EXTRA" -m CATION -t pt -T TEMPERATURES -M
+```
+where, in addition to the previous replacements:
+- `INIT` is the number of initialization steps.
+- `RUN` is the number of running steps (for which the movie will be recorded thanks to the `-M` option).
+- `CATION` is the name of the cation.
+- `TEMPERATURES` is the list of temperatures used for parallel tempering.
+
+Different cation placements can be extracted from the movie, and should be transformed into
+restart files for later use. If only the last cation placement is required, you can remove the
+`-M` flag and directly take the restart file in the `Restart` folder.
+
+Running `./data.sh` (or `./data.jl` if julia is available) outputs digests of RASPA's
+output giving the energy at each recorded step in the Movie, which is useful to check
+convergence. These are stored in `DATAenergy...` files.
+
+Once cations have a starting position, the adsorption simulation itself can be run.
+- If the cations are fixed, then the most efficient strategy consists in making a new CIF
+  file containing the cations
+- Otherwise, if cations are mobile, their starting position should be given as a restart
+  file to be put in `RestartInitial/System_0`. Either one restart file should be made for
+  each appropriate temperature and pressure, or a single restart file can be put whose name
+  should be truncated to a trailing underscore, leaving the temperature and pressure blank.
+  This file will then be copied and the name expanded for each combination of temperature
+  and pressure.
+
+The command to run to perform adsorption simulation is
+```
+$MATSCREEN/screen.py -ppn X -n X -Ni INIT -N RUN -s $MATSCREEN/data/foobar.csv -f FF -x "EXTRA" -m MOLECULES -c CODE -t ads -T TEMPERATURES -p PRESSURES
+```
+where
+- `CODE` is a list of `0` and `1`, one for each molecule in `MOLECULES`: 1 indicate that
+  this molecule is the cation, and 0 indicates that it is a gas whose adsorption is measured.
+  If all molecules are gas (the cation is part of the framework), this `-c ...` flag can
+  be removed.
+- `PRESSURES` is the list of pressures for which the simulation is carried.
+
+Running `./data.sh` (or `./data.jl` if julia is available) outputs a digest of RASPA's
+output giving the loading at each recorded step in the Movie. These are stored in
+`DATAloading...` files.
+
+In all cases, if a RASPA computation is interrupted, it can be restarted by renaming the
+`Restart` folder into `RestartInitial` and re-running the same command with an additional
+`-R` flag.
+
+Additionally, any command can generate files instead of directly running by specifying a
+`-X` option:
+- `-X exe` is the default option which runs the computation immediately.
+- `-X glost` generates a glost input file.
+- `-X slurm` generates a slurm input file.
+
+## Other
+
 Example of usage in `job_example.sh`
 
 Need help? Execute: `screen.py --help`.

@@ -4,7 +4,7 @@ NumberOfInitializationCycles  0
 PrintPropertiesEvery          0
 RestartFile                   RESTART_MODE
 
-Forcefield                    FORCEFIELD
+Forcefield                    FORCE_FIELD
 EXTRA
 
 Ensemble NVT

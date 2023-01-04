@@ -3,9 +3,16 @@ node=$(hostname)
 source ./set_environment
 
 cd "$(dirname "$0")"
-cp INPUT Scripts/simulation_${1}.input
-sed -i "s/Arg/${1}/g;s/UNITCELL/${2}/g;s/FORCEFIELD/${3}/" Scripts/simulation_${1}.input
+NEWINPUT=Scripts/simulation_${1}_${3}.input
+cp INPUT $NEWINPUT
+
+ARG="${1}"
+IFS='_'
+read -ra splits <<< "$ARG"
+BLOCKPOCKET="${splits[0]}"
+IFS=' '
+
+sed -i "s/Arg/${1}/g;s/UNITCELL/${2}/g;s/TEMPERATURE/${3}/g;s/BLOCKPOCKET/$BLOCKPOCKET/" $NEWINPUT
 echo "${1} ${2} ${3} Script DONE on $node"
-${RASPA_DIR}/bin/simulate -i Scripts/simulation_${1}.input >/dev/null
+${RASPA_DIR}/bin/simulate -i $NEWINPUT >/dev/null
 echo "${1} ${2} ${3} Simulation DONE on $node"
-rm Restart/System_0/restart_${1}_*

@@ -7,14 +7,6 @@ ContinueAfterCrash            RESTART
 WriteBinaryRestartFileEvery   N_print
 
 Forcefield                    FORCE_FIELD
-EXTRA
-
-Framework 0
-ChargeMethod EWALD
-FrameworkName Arg
-CutOffVDW CUTOFF
-UnitCells UNITCELL
-ExternalTemperature 298.0
 
 Component 0 MoleculeName                     MOLECULE
             MoleculeDefinition               TraPPE

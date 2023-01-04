@@ -8,6 +8,6 @@ GridTypes ATOMS
 UseTabularGrid yes
 SpacingVDWGrid 0.15
 SpacingCoulombGrid 0.15
-Movies yes
-WriteMoviesEvery N_print
+ComputeMSD yes
+PrintMSDEvery 500000
 EXTRA

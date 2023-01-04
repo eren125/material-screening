@@ -4,15 +4,7 @@ NumberOfInitializationCycles  N_init
 PrintPropertiesEvery          N_print
 RestartFile                   no
 
-Forcefield                    FORCEFIELD
-EXTRA
-
-Framework 0
-ChargeMethod EWALD
-FrameworkName Arg
-CutOffVDW CUTOFF
-UnitCells UNITCELL
-ExternalTemperature 298.0
+Forcefield                    FORCE_FIELD
 
 Component 0 MoleculeName                     MOLECULE
             MoleculeDefinition               TraPPE

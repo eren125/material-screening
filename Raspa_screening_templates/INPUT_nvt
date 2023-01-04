@@ -5,25 +5,10 @@ PrintPropertiesEvery          N_print
 RestartFile                   no
 
 Forcefield                    FORCE_FIELD
-EXTRA
-
-Framework 0
-ChargeMethod EWALD
-FrameworkName Arg
-CutOffVDW CUTOFF
-UnitCells UNITCELL
-ExternalTemperature TEMPERATURE
-ExternalPressure 0
-
-NumberOfGrids N_ATOMS
-GridTypes ATOMS
-SpacingVDWGrid 0.15
-SpacingCoulombGrid 0.15
-UseTabularGrid yes
 
 Component 0 MoleculeName                     MOLECULE
             MoleculeDefinition               TraPPE
             TranslationProbability           1.0
-            RotationProbability              0.0
+            RotationProbability              ROTPROBA
             ReinsertionProbability           1.0
             CreateNumberOfMolecules          1
