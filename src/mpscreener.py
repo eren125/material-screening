@@ -191,7 +191,6 @@ class Screening():
                 self.data = df[['STRUCTURE_NAME','ProbeRadius']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['HOME']:
                 self.atoms = '|'.join([mol2atoms[molecule] for molecule in MOLECULES])
-                self.temperatures = temperatures
                 self.cutoff = float(cutoff)
                 df['supercell_wrap'] = df['UnitCell'].apply(lambda x: x.replace(' ','|'))
                 self.data = df[['STRUCTURE_NAME','supercell_wrap']].to_records(index=False)
@@ -287,6 +286,7 @@ class Screening():
 
             self.path_to_run = os.path.join(path_to_work, "run")
             self.write_file(RUN_file, self.path_to_run)
+            os.system('chmod +x %s'%(self.path_to_run))
             if type_ != 'grid' and type_ != 'samplerestart':
                 julia_DATA_path = os.path.join(MATSCREEN, "Raspa_screening_templates/data_%s.jl"%type_)
                 if os.path.exists(julia_DATA_path) and not os.system("julia -v"):
@@ -427,27 +427,34 @@ class Screening():
         output = os.path.join(self.OUTPUT_PATH, "glost.list")
         if os.path.exists(output):
             os.remove(output)
+        if self.type_ == 'pt':
+            command = "bash %s "%(self.path_to_run) + struc + " \"" + opt + "\""
+            command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
+            return len(struc)
         for temperature in self.temperatures:
             if self.home:
                 command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, temperature, self.cutoff) + struc + " \"" + opt + "\""
             else:
                 command = "bash %s "%(self.path_to_run) + struc + " \"" + opt + "\" %s"%(temperature)
             command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
+        return len(self.temperatures)*len(struc)
 
     def slurm_job(self):
         """ Print out a slurm input that can be given to sbatch"""
+        num = min(40, 1 + self.glost_list())
         df = pd.DataFrame.from_records(self.data)
         struc = df.iloc[:,0]
         opt = df.iloc[:,1]
         output = os.path.join(self.OUTPUT_PATH, "input.slurm")
         with open(output, 'w') as f:
             f.write("""#!/bin/bash
-#SBATCH --nodes=1               # Number of Nodes
-#SBATCH --ntasks-per-node=40    # Number of MPI tasks per node
-#SBATCH --cpus-per-task=1       # Number of OpenMP threads
+##SBATCH --nodes=1                # Number of Nodes
+#SBATCH --ntasks=%i             # Nombre total de processus MPI
+#SBATCH --ntasks-per-node=%i    # Number of MPI tasks per node
+##SBATCH --cpus-per-task=1       # Number of OpenMP threads
 #SBATCH --hint=nomultithread    # Disable hyperthreading
 #SBATCH --job-name=%s          # Jobname
-#SBATCH --output=log.slurm      # Output file
+#SBATCH --output=%%x-%%j.log      # Output file
 #SBATCH --error=%%x-%%j.err       # Error file %%x is the jobname, %%j the jobid
 #SBATCH --time=20:00:00         # Expected runtime HH:MM:SS (max 100h)
 #SBATCH --account=drd@cpu       # To specify cpu accounting: <account> = echo $IDRPROJ
@@ -458,12 +465,12 @@ class Screening():
 
 # Manage modules
 module purge
+module load intel-all/19.0.4
+module load fftw/3.3.10
 
 # Execute commands
-"""%(self.type_))
-        for temperature in self.temperatures:
-            command = "srun -n 1 -c 1 %s "%(self.path_to_run) + struc + " \"" + opt + "\" %s &"%(temperature)
-            command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
+srun %s/glost_launch glost.list
+"""%(num, num, self.type_, os.environ['GLOST_DIR']))
 
 
     def mp_run(self):
@@ -472,7 +479,10 @@ module purge
         t0 = time()
 
         run = self.run_home if self.home else self.run
-        data = [(FRAMEWORK_NAME,UNITCELL,TEMPERATURE) for (FRAMEWORK_NAME,UNITCELL) in self.data for TEMPERATURE in self.temperatures]
+        if self.type_ == 'pt':
+            data = [(FRAMEWORK_NAME,UNITCELL,0) for (FRAMEWORK_NAME,UNITCELL) in self.data]
+        else:
+            data = [(FRAMEWORK_NAME,UNITCELL,TEMPERATURE) for (FRAMEWORK_NAME,UNITCELL) in self.data for TEMPERATURE in self.temperatures]
         print(data)
         with mp.Pool(processes=self.nprocs) as p:
             p.map(run, data)

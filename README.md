@@ -22,6 +22,11 @@ Remember the path to the directory containing the ```bin/``` directory containin
 Download and compile Zeo++ at http://www.zeoplusplus.org/download.html
 Remember the path to the directory containing the compiled ```network``` binary file
 
+### Optional: glost
+
+glost if useful to launch jobs in parallel on clusters or locally.
+Download and compile glost at https://github.com/cea-hpc/glost.
+
 ## Initial set-up
 
 This part explains how you will need to set-up your working environment
