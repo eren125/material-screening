@@ -152,9 +152,13 @@ Running `./data.sh` (or `./data.jl` if julia is available) outputs a digest of R
 output giving the loading at each recorded step in the Movie. These are stored in
 `DATAloading...` files.
 
-In all cases, if a RASPA computation is interrupted, it can be restarted by renaming the
-`Restart` folder into `RestartInitial` and re-running the same command with an additional
-`-R` flag.
+In all cases, if a RASPA computation is interrupted, it can be restarted by moving the
+`Restart` subfolder into a new folder, renaming the subfolder into `RestartInitial` and
+then re-running the same command with an additional `-R` flag in this new folder.
+If there is no `RestartInitial` in the current folder and a `-R` command is issued, the
+`Restart` folder will be renamed into `RestartInitial`. Beware that previous simulation
+contained in the new folder will be overwritten by the new simulation so only restart
+a simulation in an occupied folder if you do not need these data.
 
 Additionally, any command can generate files instead of directly running by specifying a
 `-X` option:

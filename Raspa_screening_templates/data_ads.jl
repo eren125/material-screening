@@ -85,7 +85,7 @@ function makeDATAloading(previous)
             end
             species = allocurrences(String, file, r"Component [0-9]+ \[.*\] \(([^\s]+)"; stopat="Framework Status")
             cyclekeep = species .== "Adsorbate"
-            loadings = allocurrences(Float64, file, r"\s*absolute adsorption\:.*\s+([^\s]+)\s+\(avg.\s+[^\s]+\) \[mol\/kg\]"; antiword="ENERGY DRIFT", cyclekeep)
+            loadings = allocurrences(Float64, file, r"\s*absolute adsorption\:.*\s+([^\s]+)\s+\(avg.\s+[^\s]+\) \[mol\/uc\]"; antiword="ENERGY DRIFT", cyclekeep)
             open(DATAloading, "a") do f
                 key = (TEMP, basename(file))
                 print(f, TEMP, ',', key[2], ',')

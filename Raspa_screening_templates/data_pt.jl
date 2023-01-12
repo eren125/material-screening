@@ -39,6 +39,19 @@ function allocurrences(T, file, pattern)
     return ret
 end
 
+function _moviefinder(bbase, pressure, suff)
+    suffix::String = suff*".pdb"
+    k::Int = count(==('_'), suff)
+    function (name)
+        s = split(name, '_')
+        s[1] == "Movie" || return false
+        endswith(name, suffix) || return false
+        join(@view(s[2:end-2-k]), '_') == bbase || return false
+        parse(Float64, s[end-1-k]) == pressure || return false
+        return true
+    end
+end
+
 const DATAenergy = joinpath(@__DIR__, "DATAenergy")
 function makeDATAenergy(previous)
     @assert !isfile(DATAenergy)
@@ -62,20 +75,16 @@ function makeDATAenergy(previous)
             bbase = join(@view(splits[2:end-1]), '_')
             pressure = parse(Float64, first(splitext(splits[end])))
             movietemp = joinpath(@__DIR__, "Movies", temp)
-            moviefile = getfirst(readdir(movietemp, join=false)) do name
-                s = split(name, '_')
-                s[1] == "Movie" || return false
-                s[end] == "frameworks.pdb" || return false
-                join(@view(s[2:end-2]), '_') == bbase || return false
-                parse(Float64, s[end-1]) == pressure || return false
-                return true
-            end
+            moviefile = getfirst(_moviefinder(bbase, pressure, "frameworks"), readdir(movietemp, join=false))
             energies = allocurrences(Float64, system, r"^Current total potential energy:\s*([^\s]+)")
             num = length(energies)
             if isnothing(moviefile)
+                moviefile = getfirst(_moviefinder(bbase, pressure, "component_Na_0"), readdir(movietemp, join=false))
+            end
+            if isnothing(moviefile)
                 printstyled("MOVIE for ", bbase, '_', pressure, " NOT FOUND\n"; color=:blue)
             else
-                num = count(Returns(true), eachline(joinpath(movietemp, moviefile)))÷3
+                num = count(l -> @view(l[1:5]) == "MODEL", eachline(joinpath(movietemp, moviefile)))
             end
             ptocc = allocurrences(Float64, system, r"^System \[[0-9]+\]\<\-\>\[[0-9]+\].*\(([^\s]+)\s*\[\%\]\)$")
             ptperfkey = join(@view(split(bbase, '_')[1:3]), '_')
@@ -120,3 +129,4 @@ for (df, T) in zip(gd, nums)
     perm = rename!(permutedims(@view df[:, 3:end]), titles)
     CSV.write(joinpath(@__DIR__, "DATAenergy_$T.csv"), perm)
 end
+rm(DATAenergy)
