@@ -20,7 +20,8 @@ class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF",
                  MOLECULES=['xenon','krypton'], composition=None, pressures=[101300], temperatures=[298.0],
                  cycles=2000, EwaldPrecision=1e-6, cutoff=12.0, rejection=0.85, probe_radius=1.2,
-                 Threshold_volume=0, OUTPUT_PATH=".", RESTART=False, N_init=-1, MOVIE=False, EXTRA=""):
+                 Threshold_volume=0, OUTPUT_PATH=".", RESTART=False, N_init=-1, MOVIE=False, EXTRA="",
+                 sequentially=False):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -34,8 +35,7 @@ class Screening():
             type_              (str): type of simulation the user wants to carry out. Currently available:
                                       grid calculation via 'grid', GCMC via 'ads' or 'coad', parallel tempering via 'pt',
                                       NVT MC via 'ent', Widom's insertion via 'widom', helium void fraction via 'vf',
-                                      Zeo++ via 'surface' 'volume' 'pore' 'channel', global information via 'info',
-                                      sample restart files via 'samplerestart'.
+                                      Zeo++ via 'surface' 'volume' 'pore' 'channel', global information via 'info'.
             force_field        (str): force field used for the molecular simulations,
                                       it must be defined in the Raspa directory
             MOLECULES         (list): list of molecules (str) to be adsorbed on the materials
@@ -57,6 +57,7 @@ class Screening():
             RESTART           (bool): specify if the RASPA simulation should be restarted
             MOVIE             (bool): specify if a movie should be exported for each molecule
             EXTRA              (str): extra arguments appended to each framework in Raspa2 INPUT file
+            sequentially      (bool): specify if each pressure should reuse the last Restart file in Raspa2.
 
         self variables:
             NODES              (str): names of the nodes allocated by the supercalculator
@@ -101,9 +102,13 @@ class Screening():
             raise ValueError(('%s not an option yet. Please choose between: ' +
                 ', '.join(['%s']*len(available_types))) % tuple([type_]+available_types))
 
+        print_every = 100
+
         if N_init == -1:
             N_init = min(cycles//2, 10000)//(9*RESTART+1)
-        print_every = 100
+        self.N_init = N_init
+        self.sequentially = sequentially
+        self.pressures = pressures
 
         mole_fraction = []
         if type_ == 'coad':
@@ -126,6 +131,8 @@ class Screening():
                 RESTART = True
         elif type_ == 'pt':
             mole_fraction = [True for _ in MOLECULES]
+
+        self.RESTART = RESTART
 
         molecules_path = os.path.join(MATSCREEN, 'data/molecules.csv')
         df_mol = pd.read_csv(molecules_path, encoding='utf-8')
@@ -151,14 +158,11 @@ class Screening():
                                                      FORCE_FIELD=force_field,
                                                      N_cycles=cycles,
                                                      N_print=print_every,
-                                                     N_init=N_init,
                                                      CUTOFF=cutoff,
                                                      EWALD=EWALD,
-                                                     PRESSURES=' '.join(pressures),
                                                      N_ATOMS=N_ATOMS,
                                                      ATOMS=ATOMS,
                                                      MOLECULE=MOLECULES[0],
-                                                     RESTART=('yes' if RESTART else 'no'),
                                                      TIMESTEP=probe_radius,
                                                      REJECT=rejection,
                                                      PATH=self.OUTPUT_PATH,
@@ -218,7 +222,7 @@ class Screening():
             if not os.path.isfile(path_to_FRAMEWORK):
                 path_to_FRAMEWORK = os.path.join(MATSCREEN, "Raspa_screening_templates/FRAMEWORK")
             if type_ == 'nvt':
-                kwargs['PRESSURES'] = "0"
+                self.pressures = ["0"]
             FRAMEWORK_file = self.generate(path_to_FRAMEWORK, **kwargs)
             if self.movie:
                 FRAMEWORK_file += "\nMovies yes\nWriteMoviesEvery "+str(kwargs['N_print'])
@@ -301,14 +305,20 @@ class Screening():
                     merge_file = self.generate(os.path.join(MATSCREEN, "Raspa_screening_templates/merge_info.py"), **kwargs)
                     self.write_file(merge_file, os.path.join(path_to_work,"merge_info.py"))
 
+            restartinitial = Path(os.path.join(path_to_work, "RestartInitial"))
+            if self.RESTART and not (restartinitial / "System_0").exists():
+                restartfolder = os.path.join(path_to_work, "Restart")
+                if not os.exists(restartfolder):
+                    raise FileNotFoundError("No RestartInitial nor Restart subfolder at %s, cannot make a restarted job."%path_to_work)
+                print("The Restart subfolder at %s is renamed into RestartInitial prior to starting the simulation."%path_to_work)
+                os.system('mv %s %s'%(restartfolder, restartinitial))
             if os.path.exists(os.path.join(path_to_work, "RestartInitial/System_0")):
-                restartinitial = Path(os.path.join(path_to_work, "RestartInitial"))
                 toexpand = list((restartinitial / "System_0").glob("*_"))
                 for fname in toexpand:
                     for (i, temp) in enumerate(self.temperatures):
                         dir = (restartinitial / ("System_%i"%(i if type_ == 'pt' else 0)))
                         dir.mkdir(exist_ok=True)
-                        for p in kwargs['PRESSURES'].split(' '):
+                        for p in self.pressures:
                             newname = "%s%.6f_%g" % (fname.name, float(temp), float(p))
                             os.system("cp %s %s" % (fname, dir / newname))
                     os.system("rm %s" % fname)
@@ -322,8 +332,9 @@ class Screening():
                     os.mkdir(os.path.join(path_to_work, 'Coordinates'))
                 os.system("cp %s %s"%(os.path.join(MATSCREEN, "Zeo++_screening_templates/extract_vertex.py"),path_to_work))
             RUN_file = self.generate(os.path.join(MATSCREEN, "Zeo++_screening_templates/run_%s"%type_), **kwargs)
-            self.path_to_run = os.path.join(path_to_work,"run")
+            self.path_to_run = os.path.join(path_to_work, "run")
             self.write_file(RUN_file, self.path_to_run)
+            os.system('chmod +x %s'%(self.path_to_run))
 
         elif type_ in self.SIMULATION_TYPES["HOME"]:
             self.path_to_run = os.path.join(path_to_work,"run.py")
@@ -340,6 +351,7 @@ class Screening():
             self.path_to_run = os.path.join(path_to_work,"run.sh")
             RUN_file = self.generate(os.path.join(MATSCREEN, "Cpp_screening_templates/run_%s.sh"%type_), **kwargs)
             self.write_file(RUN_file, self.path_to_run)
+            os.system('chmod +x %s'%(self.path_to_run))
             if type_ in ['csurface_acc','csurface_sa']:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.acc_coeff),index=False)
             else:
@@ -379,20 +391,63 @@ class Screening():
             outfile.close()
 
 
+    def make_sequential_command(self, struc, unitcell, temperature):
+        restart_string = 'yes' if self.RESTART else 'no'
+        subcommand = "bash %s "%(self.path_to_run) + struc + " \"" + unitcell + "\""
+        if temperature is not None:
+            subcommand += (' ' + str(temperature))
+        if not self.sequentially:
+            return subcommand + (" \"" + ' '.join(self.pressures) + "\" %s %i"%(restart_string, self.N_init))
+        command = subcommand + (" %s %s %i"%(self.pressures[0], restart_string, self.N_init))
+        root = Path(self.path_to_run).parent
+        restartinitial = root / 'RestartInitial'
+        if not restartinitial.exists():
+            os.system("mkdir %s && mkdir %s/System_0"%(restartinitial, restartinitial))
+            if self.type_ == 'pt':
+                for i in range(1, len(self.temperatures)):
+                    os.system("mkdir %s/System_%i"%(restartinitial, i))
+        restart = root / 'Restart'
+        for i in range(1, len(self.pressures)):
+            pressure = self.pressures[i]
+            if isinstance(unitcell, str):
+                newunitcell = unitcell.replace(' ', '.')
+            else:
+                newunitcell = unitcell.apply(lambda x: x.replace(' ', '.'))
+            if self.type_ != "pt":
+                if isinstance(temperature, str):
+                    newtemperature = ("%.6f"%(float(temperature))).strip()
+                else:
+                    newtemperature = temperature.apply(lambda t: "%.6f"%(float(t)))
+                fileradical = "restart_" + struc + '_' + newunitcell + '_' + newtemperature
+                oldfile = fileradical + '_' + ("%5g"%(float(self.pressures[i-1]))).lstrip()
+                newfile = fileradical + '_' + ("%5g"%(float(pressure))).lstrip()
+                command += " ; cp %s/System_0/"%(restart) + oldfile + " %s/System_0/"%(restartinitial) + newfile + " && " + subcommand + (" %s %s %i"%(pressure, 'yes', int(self.N_init/5)))
+            else:
+                for (j, T) in enumerate(self.temperatures):
+                    newtemperature = ("%.6f"%(float(T))).strip()
+                    fileradical = "restart_" + struc + '_' + newunitcell + '_' + newtemperature
+                    oldfile = fileradical + '_' + ("%5g"%(float(self.pressures[i-1]))).lstrip()
+                    newfile = fileradical + '_' + ("%5g"%(float(pressure))).lstrip()
+                    command += " ; cp %s/System_%i/"%(restart, j) + oldfile + " %s/System_%i/"%(restartinitial, j) + newfile
+                command += " && " + subcommand + (" %s %s %i"%(pressure, 'yes', int(self.N_init/5)))
+        return command
+
     def run(self, inputs):
         """A module to run one simulation on a given node according to the current process id
         """
 
         t0 = time()
         FRAMEWORK_NAME,UNITCELL,TEMPERATURE = inputs
-        if len(self.NODES) == 0:
-            command = "bash %s %s \"%s\" %s"%(self.path_to_run,FRAMEWORK_NAME,UNITCELL,TEMPERATURE)
-        else:
+        command = self.make_sequential_command(FRAMEWORK_NAME, UNITCELL, TEMPERATURE if self.type_ != 'pt' else None)
+        print("\n\n\n\n")
+        print(command)
+        print("\n\n\n\n")
+        if len(self.NODES) != 0:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s \"bash %s %s \\\"%s\\\" %s\""%(HOST,self.path_to_run,FRAMEWORK_NAME,UNITCELL,TEMPERATURE)
+            command = "ssh %s '%s'"%(HOST,subcommand)
         os.system(command)
         output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
@@ -428,14 +483,14 @@ class Screening():
         if os.path.exists(output):
             os.remove(output)
         if self.type_ == 'pt':
-            command = "bash %s "%(self.path_to_run) + struc + " \"" + opt + "\""
+            command = self.make_sequential_command(struc, opt, None)
             command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
             return len(struc)
         for temperature in self.temperatures:
             if self.home:
                 command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, temperature, self.cutoff) + struc + " \"" + opt + "\""
             else:
-                command = "bash %s "%(self.path_to_run) + struc + " \"" + opt + "\" %s"%(temperature)
+                command = self.make_sequential_command(struc, opt, temperature)
             command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
         return len(self.temperatures)*len(struc)
 
