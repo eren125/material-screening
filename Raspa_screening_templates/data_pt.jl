@@ -74,17 +74,19 @@ function makeDATAenergy(previous)
             splits = split(basename(system), '_')
             bbase = join(@view(splits[2:end-1]), '_')
             pressure = parse(Float64, first(splitext(splits[end])))
-            movietemp = joinpath(@__DIR__, "Movies", temp)
-            moviefile = getfirst(_moviefinder(bbase, pressure, "frameworks"), readdir(movietemp, join=false))
             energies = allocurrences(Float64, system, r"^Current total potential energy:\s*([^\s]+)")
             num = length(energies)
-            if isnothing(moviefile)
-                moviefile = getfirst(_moviefinder(bbase, pressure, "component_Na_0"), readdir(movietemp, join=false))
-            end
-            if isnothing(moviefile)
-                printstyled("MOVIE for ", bbase, '_', pressure, " NOT FOUND\n"; color=:blue)
-            else
-                num = count(l -> @view(l[1:5]) == "MODEL", eachline(joinpath(movietemp, moviefile)))
+            movietemp = joinpath(@__DIR__, "Movies", temp)
+            if isdir(movietemp)
+                moviefile = getfirst(_moviefinder(bbase, pressure, "frameworks"), readdir(movietemp, join=false))
+                if isnothing(moviefile)
+                    moviefile = getfirst(_moviefinder(bbase, pressure, "component_Na_0"), readdir(movietemp, join=false))
+                end
+                if isnothing(moviefile)
+                    printstyled("MOVIE for ", bbase, '_', pressure, " NOT FOUND\n"; color=:blue)
+                else
+                    num = count(l -> @view(l[1:5]) == "MODEL", eachline(joinpath(movietemp, moviefile)))
+                end
             end
             ptocc = allocurrences(Float64, system, r"^System \[[0-9]+\]\<\-\>\[[0-9]+\].*\(([^\s]+)\s*\[\%\]\)$")
             ptperfkey = join(@view(split(bbase, '_')[1:3]), '_')

@@ -21,7 +21,7 @@ class Screening():
                  MOLECULES=['xenon','krypton'], composition=None, pressures=[101300], temperatures=[298.0],
                  cycles=2000, EwaldPrecision=1e-6, cutoff=12.0, rejection=0.85, probe_radius=1.2,
                  Threshold_volume=0, OUTPUT_PATH=".", RESTART=False, N_init=-1, MOVIE=False, EXTRA="",
-                 sequentially=False):
+                 PressureParallelism='parallel'):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -57,7 +57,10 @@ class Screening():
             RESTART           (bool): specify if the RASPA simulation should be restarted
             MOVIE             (bool): specify if a movie should be exported for each molecule
             EXTRA              (str): extra arguments appended to each framework in Raspa2 INPUT file
-            sequentially      (bool): specify if each pressure should reuse the last Restart file in Raspa2.
+            PressureParallelism(str): whether Raspa computations with different pressures should be computed in
+                                      sequentially with the default Raspa behaviour ('raspa'), by using the last
+                                      Restart file as starting point for each next computation ('sequence'),
+                                      or in parallel ('parallel', default)
 
         self variables:
             NODES              (str): names of the nodes allocated by the supercalculator
@@ -107,7 +110,8 @@ class Screening():
         if N_init == -1:
             N_init = min(cycles//2, 10000)//(9*RESTART+1)
         self.N_init = N_init
-        self.sequentially = sequentially
+        assert PressureParallelism == "parallel" or PressureParallelism == "sequence" or PressureParallelism == "raspa"
+        self.PressureParallelism = PressureParallelism
         self.pressures = pressures
 
         mole_fraction = []
@@ -308,7 +312,7 @@ class Screening():
             restartinitial = Path(os.path.join(path_to_work, "RestartInitial"))
             if self.RESTART and not (restartinitial / "System_0").exists():
                 restartfolder = os.path.join(path_to_work, "Restart")
-                if not os.exists(restartfolder):
+                if not os.path.exists(restartfolder):
                     raise FileNotFoundError("No RestartInitial nor Restart subfolder at %s, cannot make a restarted job."%path_to_work)
                 print("The Restart subfolder at %s is renamed into RestartInitial prior to starting the simulation."%path_to_work)
                 os.system('mv %s %s'%(restartfolder, restartinitial))
@@ -391,14 +395,17 @@ class Screening():
             outfile.close()
 
 
-    def make_sequential_command(self, struc, unitcell, temperature):
+    def make_sequential_command(self, struc, unitcell, temperature, pressure_if_parallel):
         restart_string = 'yes' if self.RESTART else 'no'
         subcommand = "bash %s "%(self.path_to_run) + struc + " \"" + unitcell + "\""
         if temperature is not None:
             subcommand += (' ' + str(temperature))
-        if not self.sequentially:
+        if self.PressureParallelism == "raspa":
             return subcommand + (" \"" + ' '.join(self.pressures) + "\" %s %i"%(restart_string, self.N_init))
+        if self.PressureParallelism == "parallel":
+            return subcommand + (" %s %s %i"%(pressure_if_parallel, restart_string, self.N_init))
         command = subcommand + (" %s %s %i"%(self.pressures[0], restart_string, self.N_init))
+        assert self.PressureParallelism == "sequence"
         root = Path(self.path_to_run).parent
         restartinitial = root / 'RestartInitial'
         if not restartinitial.exists():
@@ -407,6 +414,7 @@ class Screening():
                 for i in range(1, len(self.temperatures)):
                     os.system("mkdir %s/System_%i"%(restartinitial, i))
         restart = root / 'Restart'
+        newNinit = self.N_init / 2
         for i in range(1, len(self.pressures)):
             pressure = self.pressures[i]
             if isinstance(unitcell, str):
@@ -421,7 +429,7 @@ class Screening():
                 fileradical = "restart_" + struc + '_' + newunitcell + '_' + newtemperature
                 oldfile = fileradical + '_' + ("%5g"%(float(self.pressures[i-1]))).lstrip()
                 newfile = fileradical + '_' + ("%5g"%(float(pressure))).lstrip()
-                command += " ; cp %s/System_0/"%(restart) + oldfile + " %s/System_0/"%(restartinitial) + newfile + " && " + subcommand + (" %s %s %i"%(pressure, 'yes', int(self.N_init/5)))
+                command += " ; cp %s/System_0/"%(restart) + oldfile + " %s/System_0/"%(restartinitial) + newfile + " && " + subcommand + (" %s %s %i"%(pressure, 'yes', newNinit))
             else:
                 for (j, T) in enumerate(self.temperatures):
                     newtemperature = ("%.6f"%(float(T))).strip()
@@ -429,7 +437,7 @@ class Screening():
                     oldfile = fileradical + '_' + ("%5g"%(float(self.pressures[i-1]))).lstrip()
                     newfile = fileradical + '_' + ("%5g"%(float(pressure))).lstrip()
                     command += " ; cp %s/System_%i/"%(restart, j) + oldfile + " %s/System_%i/"%(restartinitial, j) + newfile
-                command += " && " + subcommand + (" %s %s %i"%(pressure, 'yes', int(self.N_init/5)))
+                command += " && " + subcommand + (" %s %s %i"%(pressure, 'yes', newNinit))
         return command
 
     def run(self, inputs):
@@ -437,17 +445,14 @@ class Screening():
         """
 
         t0 = time()
-        FRAMEWORK_NAME,UNITCELL,TEMPERATURE = inputs
-        command = self.make_sequential_command(FRAMEWORK_NAME, UNITCELL, TEMPERATURE if self.type_ != 'pt' else None)
-        print("\n\n\n\n")
-        print(command)
-        print("\n\n\n\n")
+        FRAMEWORK_NAME,UNITCELL,TEMPERATURE,PRESSURE = inputs
+        command = self.make_sequential_command(FRAMEWORK_NAME, UNITCELL, TEMPERATURE if self.type_ != 'pt' else None, PRESSURE)
         if len(self.NODES) != 0:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s '%s'"%(HOST,subcommand)
+            command = "ssh %s '%s'"%(HOST,command)
         os.system(command)
         output_dict = {'Structures':[FRAMEWORK_NAME], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
@@ -458,7 +463,7 @@ class Screening():
         """
 
         t0 = time()
-        structure_name, supercell_wrap = inputs
+        structure_name, supercell_wrap, *_ = inputs
         if self.type_ == "surface_sample":
             supercell_wrap = self.n_sample
         if len(self.NODES) == 0:
@@ -482,17 +487,22 @@ class Screening():
         output = os.path.join(self.OUTPUT_PATH, "glost.list")
         if os.path.exists(output):
             os.remove(output)
-        if self.type_ == 'pt':
-            command = self.make_sequential_command(struc, opt, None)
-            command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
-            return len(struc)
-        for temperature in self.temperatures:
-            if self.home:
-                command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, temperature, self.cutoff) + struc + " \"" + opt + "\""
+        if self.PressureParallelism == "parallel":
+            pressures = self.pressures
+        else:
+            pressures = [None]
+        for pressure in pressures:
+            if self.type_ == 'pt':
+                command = self.make_sequential_command(struc, opt, None, pressure)
+                command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
             else:
-                command = self.make_sequential_command(struc, opt, temperature)
-            command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
-        return len(self.temperatures)*len(struc)
+                for temperature in self.temperatures:
+                    if self.home:
+                        command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, temperature, self.cutoff) + struc + " \"" + opt + "\""
+                    else:
+                        command = self.make_sequential_command(struc, opt, temperature, pressure)
+                    command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
+        return len(pressures)*len(self.temperatures)*(1 if self.type_ == 'pt' else len(struc))
 
     def slurm_job(self):
         """ Print out a slurm input that can be given to sbatch"""
@@ -520,8 +530,6 @@ class Screening():
 
 # Manage modules
 module purge
-module load intel-all/19.0.4
-module load fftw/3.3.10
 
 # Execute commands
 srun %s/glost_launch glost.list
@@ -535,9 +543,11 @@ srun %s/glost_launch glost.list
 
         run = self.run_home if self.home else self.run
         if self.type_ == 'pt':
-            data = [(FRAMEWORK_NAME,UNITCELL,0) for (FRAMEWORK_NAME,UNITCELL) in self.data]
+            self.temperatures = [0]
+        if self.PressureParallelism == "parallel":
+            data = [(FRAMEWORK_NAME,UNITCELL,TEMPERATURE,PRESSURE) for (FRAMEWORK_NAME,UNITCELL) in self.data for TEMPERATURE in self.temperatures for PRESSURE in self.pressures]
         else:
-            data = [(FRAMEWORK_NAME,UNITCELL,TEMPERATURE) for (FRAMEWORK_NAME,UNITCELL) in self.data for TEMPERATURE in self.temperatures]
+            data = [(FRAMEWORK_NAME,UNITCELL,TEMPERATURE,None) for (FRAMEWORK_NAME,UNITCELL) in self.data  for TEMPERATURE in self.temperatures]
         print(data)
         with mp.Pool(processes=self.nprocs) as p:
             p.map(run, data)

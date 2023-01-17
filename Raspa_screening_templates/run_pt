@@ -3,7 +3,8 @@ node=$(hostname)
 source ./set_environment
 
 cd "$(dirname "$0")"
-NEWINPUT=Scripts/simulation_${1}_${3}.input
+trimmedpressures=`echo ${4} | sed 's/ //g'`
+NEWINPUT=Scripts/simulation_${1}_${trimmedpressures}.input
 cp INPUT $NEWINPUT
 
 sed -i "s/Arg/${1}/g;s/UNITCELL/${2}/g;s/PRESSURES/${3}/g;s/RESTART/${4}/g;s/N_init/${5}/g" $NEWINPUT
@@ -16,6 +17,6 @@ then
 fi
 
 sed -i "s/NUMCATION/${NUMCATION}/g" $NEWINPUT
-echo "Script DONE on $node: ${1} ${2} ${3} ${5}"
+echo "Script DONE on $node: ${1} ${2} ${trimmedpressures} ${5}"
 ${RASPA_DIR}/bin/simulate -i $NEWINPUT >/dev/null
-echo "Simulation DONE on $node: ${1} ${2} ${3} ${5}"
+echo "Simulation DONE on $node: ${1} ${2} ${trimmedpressures} ${5}"

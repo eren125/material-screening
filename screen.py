@@ -47,8 +47,8 @@ parser.add_argument('-T', '--Temperatures', nargs='+', default=[298.0],
 parser.add_argument('-p', '--pressures', nargs='+', default=['101300'],
                     help='specify the pressures in the simulation\nExample: 101300 1e6 2.5e7. Default=101300')
 
-parser.add_argument('-S', '--Sequentially', action='store_true',
-                    help='specify if you want to do Raspa computations for different pressures sequentially, by using each Restart file for the next batch.')
+parser.add_argument('-Pp', '--pressureparallelism', nargs='?', default='parallel',
+                    help='choose whether to let Raspa compute the different pressions sequentially in the same file ("raspa"), sequentially using each Restart file for the next batch ("sequence"), or in parallel ("parallel", default).')
 
 parser.add_argument('-C', '--Cutoff', nargs='?', default=12,
                     help='specify the cut-off of the Raspa2 simulations\nDefault=12')
@@ -103,7 +103,7 @@ COMPOSITION = args.composition
 radius = float(args.radius)
 Threshold_volume = float(args.threshold)
 RESTART = args.Restart
-sequentially = args.Sequentially
+PressureParallelism = args.pressureparallelism
 
 MOVIE = args.Movie
 EXTRA=' '.join(args.extra).replace(',', '\n')
@@ -114,7 +114,7 @@ ppn = int(args.procspernode)
 screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperatures=temperatures, cutoff=cutoff,probe_radius=radius,
          force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH,
          EwaldPrecision=EwaldPrecision, Threshold_volume=Threshold_volume, RESTART=RESTART, N_init=N_init, MOVIE=MOVIE, EXTRA=EXTRA,
-         sequentially=sequentially)
+         PressureParallelism=PressureParallelism)
 
 # launching the screening
 if args.execute == 'glost':
