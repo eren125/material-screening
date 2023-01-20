@@ -1,11 +1,12 @@
 #!/bin/bash
 #TODO integrate it into the python script as an important environment variable
 start=$SECONDS
-MATSCREEN=/home/emmanuel/Documents/material-screening # replace with your path to material-screening
+export CURRENTDIR=$PWD
+export MATSCREEN=/home/emmanuel/Documents/coudert_lab/material-screening
 #export NODES=$(srun hostname | sort | uniq)
 #echo "Running on nodes:"
 #echo "${NODES}"
 
-$MATSCREEN/screen.py -ppn 20 -n 20 -s $MATSCREEN/data/structures.csv -m xenon -t sample
-
+python3 $MATSCREEN/screen.py -ppn 1 -n 1 -s $MATSCREEN/data/structures_sym.csv -m xenon -t raess -f UFF -g yes -N 2000 -rj 0.85 -r 1.6 -o .
+bash $MATSCREEN/copy_env.sh set_environment
 echo $(( SECONDS - start ))

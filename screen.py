@@ -44,6 +44,9 @@ parser.add_argument('-T', '--Temperature', nargs='?', default=298.0,
 parser.add_argument('-p', '--pressures', nargs='+', default=['101300'],
                     help='specify the pressures in the simulation\nExample: xenon krypton CO2. Default=101300')
 
+parser.add_argument('-v', '--volume', nargs='?', default='20',
+                    help='specify the rejection condition relative radiu \nDefault: 20 nm^3')
+
 parser.add_argument('-C', '--Cutoff', nargs='?', default=12,
                     help='specify the cut-off of the Raspa2 simulations\nDefault=12')
 
@@ -75,6 +78,7 @@ MOLECULES = args.molecules
 OUTPUT_PATH = args.output_directory
 PRESSURES = args.pressures
 temperature = float(args.Temperature)
+thresh_vol = float(args.volume)
 cutoff = float(args.Cutoff)
 
 CYCLES = int(args.Ncycles)
@@ -86,7 +90,7 @@ nprocs = int(args.nprocesses)
 ppn = int(args.procspernode)
 # initialising the screening procedure
 screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperature=temperature, cutoff=cutoff,probe_radius=radius,
-         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH,
+         force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, Threshold_volume=thresh_vol, OUTPUT_PATH=OUTPUT_PATH,
          RESTART=RESTART)
 # launching the screening
 if args.glost_list in ['yes','y']:
