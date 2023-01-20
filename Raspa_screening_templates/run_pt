@@ -3,7 +3,7 @@ node=$(hostname)
 source ./set_environment
 
 cd "$(dirname "$0")"
-trimmedpressures=`echo ${4} | sed 's/ //g'`
+trimmedpressures=`echo ${3} | sed 's/ //g'`
 NEWINPUT=Scripts/simulation_${1}_${trimmedpressures}.input
 cp INPUT $NEWINPUT
 

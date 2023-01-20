@@ -400,6 +400,8 @@ class Screening():
 
     def has_completed_computation(self, struc, unitcell, temperature, pressure_input):
         outputs = Path(self.OUTPUT_PATH) / "Output"
+        if not outputs.exists():
+            return False
         if temperature == -1:
             system0 = outputs / "System_0"
             if not system0.is_dir():
