@@ -53,7 +53,7 @@ function _moviefinder(bbase, pressure, suff)
 end
 
 const DATAenergy = joinpath(@__DIR__, "DATAenergy")
-function makeDATAenergy(previous)
+function makeDATAenergy(previous, target="total potential")
     @assert !isfile(DATAenergy)
     prepends = Dict{Tuple{Int,String},SubString{String}}()
     if !isnothing(previous)
@@ -67,6 +67,7 @@ function makeDATAenergy(previous)
 
     ptperf = Tuple{String,Vector{Float64}}[]
     ptperf_dict = Dict{String,Int}()
+    tab = target == "total potential" ? "" : "	"
     for temp in readdir(joinpath(@__DIR__, "Output"), join=false)
         files = readdir(joinpath(@__DIR__, "Output", temp), join=true)
         TEMP = seekgrep!(eachline(first(files)), Int, r"^External temperature:\s*([^\s]+)")
@@ -74,13 +75,13 @@ function makeDATAenergy(previous)
             splits = split(basename(system), '_')
             bbase = join(@view(splits[2:end-1]), '_')
             pressure = parse(Float64, first(splitext(splits[end])))
-            energies = allocurrences(Float64, system, r"^Current total potential energy:\s*([^\s]+)")
+            energies = allocurrences(Float64, system, Regex("^$(tab)Current $target energy:\\s*([^\\s]+)"))
             num = length(energies)
             movietemp = joinpath(@__DIR__, "Movies", temp)
             if isdir(movietemp)
                 moviefile = getfirst(_moviefinder(bbase, pressure, "frameworks"), readdir(movietemp, join=false))
                 if isnothing(moviefile)
-                    moviefile = getfirst(_moviefinder(bbase, pressure, "component_Na_0"), readdir(movietemp, join=false))
+                    moviefile = getfirst(_moviefinder(bbase, pressure, "allcomponents"), readdir(movietemp, join=false))
                 end
                 if isnothing(moviefile)
                     printstyled("MOVIE for ", bbase, '_', pressure, " NOT FOUND\n"; color=:blue)
@@ -122,7 +123,17 @@ function makeDATAenergy(previous)
         # end
     end
 end
-makeDATAenergy(isempty(ARGS) ? nothing : first(ARGS))
+
+if isempty(ARGS)
+    makeDATAenergy(nothing)
+elseif occursin('=', ARGS[1])
+    _s = split(ARGS[1], '=')
+    @assert _s[1] == "target"
+    @assert length(_s) == 2
+    makeDATAenergy(nothing, _s[2])
+else
+    makeDATAenergy(ARGS[1])
+end
 
 const gd = groupby(CSV.read(DATAenergy, DataFrame; header=false), 1)
 const nums = combine(gd, 1=>first; renamecols=false)[!, 1]

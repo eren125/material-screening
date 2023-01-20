@@ -69,7 +69,10 @@ parser.add_argument('-th', '--threshold', nargs='?', default='0',
                     help='reject structures with a volume above the specified threshold \nDefault=None')
 
 parser.add_argument('-R', '--Restart', action='store_true',
-                    help='specify if you want to restart from binary files')
+                    help='specify if you want to restart from a previous state')
+
+parser.add_argument('-sd', '--skipdone', action='store_true',
+                    help='skip Raspa computations that have already been completed')
 
 parser.add_argument('-M', '--Movie', action='store_true',
                     help='specify if you want to output the movie (for RASPA simulations)')
@@ -103,6 +106,7 @@ COMPOSITION = args.composition
 radius = float(args.radius)
 Threshold_volume = float(args.threshold)
 RESTART = args.Restart
+SKIPDONE = args.skipdone
 PressureParallelism = args.pressureparallelism
 
 MOVIE = args.Movie
@@ -114,7 +118,7 @@ ppn = int(args.procspernode)
 screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperatures=temperatures, cutoff=cutoff,probe_radius=radius,
          force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH,
          EwaldPrecision=EwaldPrecision, Threshold_volume=Threshold_volume, RESTART=RESTART, N_init=N_init, MOVIE=MOVIE, EXTRA=EXTRA,
-         PressureParallelism=PressureParallelism)
+         SKIPDONE=SKIPDONE, PressureParallelism=PressureParallelism)
 
 # launching the screening
 if args.execute == 'glost':

@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+import shlex
+
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SOURCE_DIR)
 MATSCREEN = os.path.dirname(SOURCE_DIR)
@@ -21,7 +23,7 @@ class Screening():
                  MOLECULES=['xenon','krypton'], composition=None, pressures=[101300], temperatures=[298.0],
                  cycles=2000, EwaldPrecision=1e-6, cutoff=12.0, rejection=0.85, probe_radius=1.2,
                  Threshold_volume=0, OUTPUT_PATH=".", RESTART=False, N_init=-1, MOVIE=False, EXTRA="",
-                 PressureParallelism='parallel'):
+                 SKIPDONE=False, PressureParallelism='parallel'):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
         Catch Obvious value errors, incompatible mix of varibles, etc.
@@ -55,6 +57,7 @@ class Screening():
             glost_list        (bool): Print a list of commands to be run by glost_launch binary
                                       (see https://github.com/cea-hpc/glost.git)
             RESTART           (bool): specify if the RASPA simulation should be restarted
+            SKIPDONE          (bool): specify whether to check for already completed RASPA simulations and skip them
             MOVIE             (bool): specify if a movie should be exported for each molecule
             EXTRA              (str): extra arguments appended to each framework in Raspa2 INPUT file
             PressureParallelism(str): whether Raspa computations with different pressures should be computed in
@@ -137,6 +140,7 @@ class Screening():
             mole_fraction = [True for _ in MOLECULES]
 
         self.RESTART = RESTART
+        self.SKIPDONE = SKIPDONE
 
         molecules_path = os.path.join(MATSCREEN, 'data/molecules.csv')
         df_mol = pd.read_csv(molecules_path, encoding='utf-8')
@@ -394,11 +398,41 @@ class Screening():
             outfile.write(generated_file)
             outfile.close()
 
+    def has_completed_computation(self, struc, unitcell, temperature, pressure_input):
+        outputs = Path(self.OUTPUT_PATH) / "Output"
+        if temperature == -1:
+            system0 = outputs / "System_0"
+            if not system0.is_dir():
+                return False
+            list0 = os.listdir(system0)
+            if len(list0) == 0:
+                return False
+            temperature = list0[0].split('_')[-2]
+        pressures = [pressure_input] if pressure_input != -1 else self.pressures
+        for pressure in pressures:
+            name = "output_" + struc + '_' + unitcell.replace(' ', '.') + "_%.6f_%.4g.data"%(float(temperature), float(pressure))
+            notfound = True
+            for syst in os.listdir(outputs):
+                if len(syst) <= 7 or syst[:7] != "System_" or not syst[7:].isdigit():
+                    continue
+                fullfile = outputs / syst / name
+                if not fullfile.is_file():
+                    continue
+                if not os.system('tail %s | grep -q "Simulation finished"'%(fullfile)):
+                    if os.system('tail %s | grep -q "ENERGY DRIFT"'%(fullfile)):
+                        # simulation finished with no energy drift
+                        notfound = False
+                        break
+                # either the simulation did not finish or there was some energy drift
+                return False
+            if notfound:
+                return False # this file could not be found
+        return True
 
     def make_sequential_command(self, struc, unitcell, temperature, pressure_if_parallel):
         restart_string = 'yes' if self.RESTART else 'no'
         subcommand = "bash %s "%(self.path_to_run) + struc + " \"" + unitcell + "\""
-        if temperature is not None:
+        if temperature != -1:
             subcommand += (' ' + str(temperature))
         if self.PressureParallelism == "raspa":
             return subcommand + (" \"" + ' '.join(self.pressures) + "\" %s %i"%(restart_string, self.N_init))
@@ -446,7 +480,7 @@ class Screening():
 
         t0 = time()
         FRAMEWORK_NAME,UNITCELL,TEMPERATURE,PRESSURE = inputs
-        command = self.make_sequential_command(FRAMEWORK_NAME, UNITCELL, TEMPERATURE if self.type_ != 'pt' else None, PRESSURE)
+        command = self.make_sequential_command(FRAMEWORK_NAME, UNITCELL, TEMPERATURE if self.type_ != 'pt' else -1, PRESSURE)
         if len(self.NODES) != 0:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
@@ -479,6 +513,32 @@ class Screening():
         output_dict = {'Structures':[structure_name], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
 
+    def trim_completed_glost(self, output):
+        with open(output) as f:
+            lines = f.readlines()
+        if len(lines) == 0:
+            return 0
+        if (not self.SKIPDONE) or lines[0][:4] != "bash":
+            return len(lines)
+        num = 0
+        with open(output, 'w') as f:
+            for line in lines:
+                splits = shlex.split(line)
+                assert splits[0] == "bash"
+                struc = splits[2]
+                unitcell = splits[3]
+                pressure = splits[-3]
+                if len(splits) == 8: # bash run struc unitcell T P restart Ni
+                    temperature = splits[4]
+                else:
+                    temperature = -1
+                if ' ' in pressure:
+                    pressure = -1
+                if not self.has_completed_computation(struc, unitcell, temperature, pressure):
+                    f.write(line)
+                    num += 1
+        return num
+
     def glost_list(self):
         """ Print out glost list for mpirun"""
         df = pd.DataFrame.from_records(self.data)
@@ -487,36 +547,30 @@ class Screening():
         output = os.path.join(self.OUTPUT_PATH, "glost.list")
         if os.path.exists(output):
             os.remove(output)
-        if self.PressureParallelism == "parallel":
-            pressures = self.pressures
-        else:
-            pressures = [None]
+        temperatures = self.temperatures
+        if self.type_ == 'pt':
+            temperatures = [-1]
+        pressures = self.pressures
+        if self.PressureParallelism != "parallel":
+            pressures = [-1]
         for pressure in pressures:
-            if self.type_ == 'pt':
-                command = self.make_sequential_command(struc, opt, None, pressure)
+            for temperature in temperatures:
+                if self.home:
+                    command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, temperature, self.cutoff) + struc + " \"" + opt + "\""
+                else:
+                    command = self.make_sequential_command(struc, opt, temperature, pressure)
                 command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
-            else:
-                for temperature in self.temperatures:
-                    if self.home:
-                        command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, temperature, self.cutoff) + struc + " \"" + opt + "\""
-                    else:
-                        command = self.make_sequential_command(struc, opt, temperature, pressure)
-                    command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
-        return len(pressures)*len(self.temperatures)*(1 if self.type_ == 'pt' else len(struc))
+        return self.trim_completed_glost(output)
+        #return len(pressures)*len(self.temperatures)*(1 if self.type_ == 'pt' else len(struc))
 
     def slurm_job(self):
         """ Print out a slurm input that can be given to sbatch"""
         num = min(40, 1 + self.glost_list())
-        df = pd.DataFrame.from_records(self.data)
-        struc = df.iloc[:,0]
-        opt = df.iloc[:,1]
         output = os.path.join(self.OUTPUT_PATH, "input.slurm")
         with open(output, 'w') as f:
             f.write("""#!/bin/bash
-##SBATCH --nodes=1                # Number of Nodes
 #SBATCH --ntasks=%i             # Nombre total de processus MPI
 #SBATCH --ntasks-per-node=%i    # Number of MPI tasks per node
-##SBATCH --cpus-per-task=1       # Number of OpenMP threads
 #SBATCH --hint=nomultithread    # Disable hyperthreading
 #SBATCH --job-name=%s          # Jobname
 #SBATCH --output=%%x-%%j.log      # Output file
@@ -524,15 +578,20 @@ class Screening():
 #SBATCH --time=20:00:00         # Expected runtime HH:MM:SS (max 100h)
 #SBATCH --account=drd@cpu       # To specify cpu accounting: <account> = echo $IDRPROJ
 
+##SBATCH --nodes=1               # Number of Nodes (uncomment to use)
+##SBATCH --cpus-per-task=1       # Number of OpenMP threads (uncomment to use)
+
 ##SBATCH --partition=<partition>       # To specify partition (see IDRIS web site for more info)
-##SBATCH --qos=qos_cpu-dev      # Uncomment for job requiring less than 2 hours
-##SBATCH --qos=qos_cpu-t4      # Uncomment for job requiring more than 20h (only one node)
+##SBATCH --qos=qos_cpu-dev       # Uncomment for job requiring less than 2 hours
+##SBATCH --qos=qos_cpu-t4        # Uncomment for job requiring more than 20h (only one node)
 
 # Manage modules
 module purge
+module load parallel
 
 # Execute commands
-srun %s/glost_launch glost.list
+#srun %s/glost_launch glost.list
+parallel < glost.list
 """%(num, num, self.type_, os.environ['GLOST_DIR']))
 
 
@@ -542,12 +601,18 @@ srun %s/glost_launch glost.list
         t0 = time()
 
         run = self.run_home if self.home else self.run
+        temperatures = self.temperatures
         if self.type_ == 'pt':
-            self.temperatures = [0]
-        if self.PressureParallelism == "parallel":
-            data = [(FRAMEWORK_NAME,UNITCELL,TEMPERATURE,PRESSURE) for (FRAMEWORK_NAME,UNITCELL) in self.data for TEMPERATURE in self.temperatures for PRESSURE in self.pressures]
-        else:
-            data = [(FRAMEWORK_NAME,UNITCELL,TEMPERATURE,None) for (FRAMEWORK_NAME,UNITCELL) in self.data  for TEMPERATURE in self.temperatures]
+            temperatures = [-1]
+        pressures = self.pressures
+        if self.PressureParallelism != "parallel":
+            pressures = [-1]
+        data = [(FRAMEWORK_NAME,UNITCELL,TEMPERATURE,PRESSURE)
+                 for (FRAMEWORK_NAME,UNITCELL) in self.data
+                 for TEMPERATURE in temperatures
+                 for PRESSURE in pressures
+                 if not self.has_completed_computation(FRAMEWORK_NAME, UNITCELL, TEMPERATURE, PRESSURE)]
+
         print(data)
         with mp.Pool(processes=self.nprocs) as p:
             p.map(run, data)
