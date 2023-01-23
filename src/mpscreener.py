@@ -412,7 +412,7 @@ class Screening():
             temperature = list0[0].split('_')[-2]
         pressures = [pressure_input] if pressure_input != -1 else self.pressures
         for pressure in pressures:
-            name = "output_" + struc + '_' + unitcell.replace(' ', '.') + "_%.6f_%.4g.data"%(float(temperature), float(pressure))
+            name = "output_" + struc + '_' + unitcell.replace(' ', '.') + "_%.6f_%.6g.data"%(float(temperature), float(pressure))
             notfound = True
             for syst in os.listdir(outputs):
                 if len(syst) <= 7 or syst[:7] != "System_" or not syst[7:].isdigit():
@@ -613,7 +613,7 @@ parallel < glost.list
                  for (FRAMEWORK_NAME,UNITCELL) in self.data
                  for TEMPERATURE in temperatures
                  for PRESSURE in pressures
-                 if not self.has_completed_computation(FRAMEWORK_NAME, UNITCELL, TEMPERATURE, PRESSURE)]
+                 if not (self.SKIPDONE and self.has_completed_computation(FRAMEWORK_NAME, UNITCELL, TEMPERATURE, PRESSURE))]
 
         print(data)
         with mp.Pool(processes=self.nprocs) as p:
