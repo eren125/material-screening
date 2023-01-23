@@ -567,7 +567,7 @@ class Screening():
 
     def slurm_job(self):
         """ Print out a slurm input that can be given to sbatch"""
-        num = min(40, 1 + self.glost_list())
+        num = min(40, (1 + self.glost_list() // 2))
         output = os.path.join(self.OUTPUT_PATH, "input.slurm")
         with open(output, 'w') as f:
             f.write("""#!/bin/bash
