@@ -22,10 +22,10 @@ Remember the path to the directory containing the ```bin/``` directory containin
 Download and compile Zeo++ at http://www.zeoplusplus.org/download.html
 Remember the path to the directory containing the compiled ```network``` binary file
 
-### Optional: glost
+### Glost
 
-glost if useful to launch jobs in parallel on clusters or locally.
-Download and compile glost at https://github.com/cea-hpc/glost.
+Download and compile Glost at https://github.com/cea-hpc/glost
+It is used to run the glost list generated when using the ```-X glost``` of ```screen.py```.
 
 ## Initial set-up
 
@@ -70,7 +70,7 @@ For the forcefield, you can use the default ones in Raspa2 add your own force fi
 <ul>
     <li><b>CoRE MOF Database</b>: The Computation-Ready, Experimental Metal--Organic Framework (MOF) database is an experimental based dabase described in this <a href="https://pubs.acs.org/doi/abs/10.1021/acs.jced.9b00835">paper</a> and can be downloaded via this <a href="https://zenodo.org/record/3677685#.YFnEu3VKhhE">link</a> (about 14,000 structures)</li>
     <li><b>QMOF Database</b>: Quantum MOF (QMOF) database is a DFT-optimized MOFs database <a href="https://chemrxiv.org/articles/preprint/Machine_Learning_the_Quantum-Chemical_Properties_of_Metal_Organic_Frameworks_for_Accelerated_Materials_Discovery_with_a_New_Electronic_Structure_Database/13147616/1?file=25304507">paper</a> and can be downloaded via this <a href="https://figshare.com/articles/dataset/QMOF_Database/13147324">link</a> (about 14,000 structures)</li>
-    <li><b>MOFDB</b>: ToBaCCo and hMOF datasets can be downloaded via this <a href="https://mof.tech.northwestern.edu/databases">link</a>. The Topologically-Based Crystal Constructor generates automatically MOFs based on the metal, the linker and the topology. The algorithm is described in detail in this <a href="https://pubs.acs.org/doi/abs/10.1021/acs.cgd.7b00848">paper</a> and the hMOF database is another hypothetical MOF database described in this <a href="https://www.nature.com/articles/nchem.1192">paper</a> </li>
+    <li><b>MOFXDB</b>: ToBaCCo and hMOF datasets can be downloaded via this <a href="https://mof.tech.northwestern.edu/databases">link</a>. The Topologically-Based Crystal Constructor generates automatically MOFs based on the metal, the linker and the topology. The algorithm is described in detail in this <a href="https://pubs.acs.org/doi/abs/10.1021/acs.cgd.7b00848">paper</a> and the hMOF database is another hypothetical MOF database described in this <a href="https://www.nature.com/articles/nchem.1192">paper</a> </li>
 </ul>
 
 Zeolite, Porous Polymer Networks and Covalent Organic Framework can also be found as databases.

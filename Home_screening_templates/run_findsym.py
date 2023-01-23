@@ -92,10 +92,14 @@ _atom_site_fract_y
 _atom_site_fract_z
 ''')
 
+    sym_temp = ""
     for pos, at in zip(scaled_positions[uniques], numbers[uniques]):
         sym = element_symbols[at]
-        f.write('%s %s 1.0 %.7f %.7f %.7f\n' % (sym, sym, pos[0], pos[1], pos[2]))
-
+        if sym != sym_temp:
+            count = 1
+        f.write('%s%d %s 1.0 %.7f %.7f %.7f\n' % (sym, count, sym, pos[0], pos[1], pos[2]))
+        sym_temp = sym
+        count += 1
     f.close()
 
 

@@ -86,7 +86,7 @@ class Screening():
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi', 'block'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
-                    "CPP"    : ["csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
+                    "CPP"    : ["raess", "csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
                    }
         try:
             self.NODES = os.environ['NODES']
@@ -161,6 +161,7 @@ class Screening():
         EWALD = "Ewald\nEwaldPrecision "+str(EwaldPrecision) if EwaldPrecision else "None"
         self.movie = MOVIE
         self.temperatures = temperatures
+        self.rej_coeff = rejection
 
         self.generate_files(self.OUTPUT_PATH, type_, mol2atoms, molecule_dict=molecule_dict,
                                                      FORCE_FIELD=force_field,
@@ -360,12 +361,14 @@ class Screening():
             RUN_file = self.generate(os.path.join(MATSCREEN, "Cpp_screening_templates/run_%s.sh"%type_), **kwargs)
             self.write_file(RUN_file, self.path_to_run)
             os.system('chmod +x %s'%(self.path_to_run))
-            if type_ in ['csurface_acc','csurface_sa']:
+            if type_ in ['raess']:
+                pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "ASA_m2_cm3":[], "time":[]}).to_csv('cpp_output_%s_%s_%s.csv'%(self.n_sample,self.rej_coeff,self.acc_coeff),index=False)
+            elif type_ in ['csurface_acc','csurface_sa']:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.acc_coeff),index=False)
             else:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
 
-        os.system("bash %s %s"%(os.path.join(MATSCREEN, "copy_env.sh"), os.path.join(path_to_work, "set_environment")))
+        #os.system("bash %s %s"%(os.path.join(MATSCREEN, "copy_env.sh"), os.path.join(path_to_work, "set_environment")))
 
 
     @staticmethod
