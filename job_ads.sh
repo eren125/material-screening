@@ -4,7 +4,7 @@ source ./set_environment
 #echo "Running on nodes:"
 #echo "${NODES}"
 
-$MATSCREEN_PYTHON $MATSCREEN/screen.py -ppn 20 -n 20 -s $MATSCREEN/data/structures_sample.csv -m xenon -N 100 -t ads
+$MATSCREEN_PYTHON $MATSCREEN/screen.py -ppn 20 -n 20 -s $MATSCREEN/data/structures_sample.csv -th 20 -m xenon -N 100 -t ads
 
 rm -rf Movies/
 rm -rf VTK/

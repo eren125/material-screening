@@ -65,7 +65,7 @@ parser.add_argument('-r', '--radius', nargs='?', default='1.2',
 parser.add_argument('-rj', '--rejection', nargs='?', default='0.85',
                     help='specify the rejection condition relative radius in surface simulations \nDefault: 0.85')
 
-parser.add_argument('-th', '--threshold', nargs='?', default='0',
+parser.add_argument('-th', '--threshold', nargs='?', default='20',
                     help='reject structures with a volume above the specified threshold \nDefault=None')
 
 parser.add_argument('-R', '--Restart', action='store_true',
