@@ -1,0 +1,13 @@
+#! /bin/bash
+node=$(hostname)
+export MATSCREEN=/home/emmanuel/Documents/material-screening
+source ${MATSCREEN}/set_environment
+
+cd "$(dirname "$0")" 
+${ZEO_DIR}/network -r rad_uff_298K.rad  \
+-strinfo Output_info/results_${1}.strinfo \
+-ha -chan ${2} Output_chan/results_${1}.chan \
+-ha -sa ${2} ${2} 2000 Output_sa/results_${1}.sa \
+-volpo ${2} ${2} 10000 Output_volpo/results_${1}.volpo \
+${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&
+echo "structure ${1} radius ${2} pore Simulation DONE on $node"
