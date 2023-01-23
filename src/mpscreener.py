@@ -86,7 +86,7 @@ class Screening():
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi', 'block'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
-                    "CPP"    : ["raess", "csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
+                    "CPP"    : ["raess", "cgrid", "barrier", "csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
                    }
         try:
             self.NODES = os.environ['NODES']
@@ -189,10 +189,10 @@ class Screening():
         elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
             df_info = pd.read_csv(os.path.join(MATSCREEN, "data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME'])
             if cutoff != 12 :
-                df_info['a'] = ((cutoff*2)/df_box['x_box [A]'].astype(float)).astype(int) + 1
-                df_info['b'] = ((cutoff*2)/df_box['y_box [A]'].astype(float)).astype(int) + 1
-                df_info['c'] = ((cutoff*2)/df_box['z_box [A]'].astype(float)).astype(int) + 1
-                df_box['UnitCell'] = df_box['a'].astype(str) + ' ' + df_box['b'].astype(str) + ' ' + df_box['c'].astype(str)
+                df_info['a'] = ((cutoff*2)/df_info['x_box [A]'].astype(float)).astype(int) + 1
+                df_info['b'] = ((cutoff*2)/df_info['y_box [A]'].astype(float)).astype(int) + 1
+                df_info['c'] = ((cutoff*2)/df_info['z_box [A]'].astype(float)).astype(int) + 1
+                df_info['UnitCell'] = df_info['a'].astype(str) + ' ' + df_info['b'].astype(str) + ' ' + df_info['c'].astype(str)
             df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]']],how="left", on="STRUCTURE_NAME")
             df['UnitCell'] = df['UnitCell'].fillna("1 1 1")
             if Threshold_volume > 0:
@@ -511,14 +511,14 @@ class Screening():
         if self.type_ == "surface_sample":
             supercell_wrap = self.n_sample
         if len(self.NODES) == 0:
-            command = "%s %s %s %s %s %s \"%s\" \"%s\" "%(sys.executable, self.path_to_run, structure_name, self.cutoff, self.forcefield, self.temperature, self.atoms, supercell_wrap)
+            command = "%s %s %s %s %s %s \"%s\" \"%s\" "%(sys.executable, self.path_to_run, structure_name, self.cutoff, self.forcefield, self.temperatures[0], self.atoms, supercell_wrap)
             print(command)
         else:
             worker = int(mp.current_process()._identity[0])
             nnode = len(self.NODES)
             index = (worker-1)%nnode
             HOST = self.NODES[index]
-            command = "ssh %s \"%s %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \""%(HOST, sys.executable, self.path_to_run, self.atoms, self.forcefield, self.temperature, self.cutoff, structure_name, supercell_wrap)
+            command = "ssh %s \"%s %s \\\"%s\\\" %s %s %s %s \\\"%s\\\" \""%(HOST, sys.executable, self.path_to_run, structure_name, self.cutoff, self.forcefield, self.temperatures[0], self.atoms, supercell_wrap)
         os.system(command)
         output_dict = {'Structures':[structure_name], "CPU_time (s)":[int(time()-t0)]}
         pd.DataFrame(output_dict).to_csv(os.path.join(self.OUTPUT_PATH,"time.csv"),mode="a",index=False,header=False)
@@ -566,7 +566,7 @@ class Screening():
         for pressure in pressures:
             for temperature in temperatures:
                 if self.home:
-                    command = "%s %s \"%s\" %s %s %s "%(sys.executable, self.path_to_run, self.atoms, self.forcefield, temperature, self.cutoff) + struc + " \"" + opt + "\""
+                    command = "%s %s "%(sys.executable, self.path_to_run) + struc + " %s %s %s \"%s\" "%(self.cutoff, self.forcefield, temperature, self.atoms) + " \"" + opt + "\""
                 else:
                     command = self.make_sequential_command(struc, opt, temperature, pressure)
                 command.to_frame().to_csv(output, index=False, header=False, quoting=csv.QUOTE_NONE, quotechar='', mode='a')
