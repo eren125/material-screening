@@ -59,8 +59,12 @@ class load():
         lattice_matrix = self._frac_to_cart_matrix(structure)
         inv_lattice_matrix = np.linalg.inv(lattice_matrix)
 
-        df_voro["cartesian_coordinates"] = df_voro.apply(lambda row: np.array([float(row.x),float(row.y),float(row.z)]), axis=1)
-        df_voro["fractional_coordinates"] = df_voro["cartesian_coordinates"].to_numpy().dot(inv_lattice_matrix)
+        # df_voro["cartesian_coordinates"] = df_voro.apply(lambda row: np.array([float(row.x),float(row.y),float(row.z)]), axis=1)
+        # df_voro["fractional_coordinates"] = df_voro["cartesian_coordinates"].to_numpy().dot(inv_lattice_matrix)
+        df_voro["x_frac"] = inv_lattice_matrix[0,0]*df_voro["x"] + inv_lattice_matrix[0,1]*df_voro["y"] + inv_lattice_matrix[0,2]*df_voro["z"]
+        df_voro["y_frac"] = inv_lattice_matrix[1,0]*df_voro["x"] + inv_lattice_matrix[1,1]*df_voro["y"] + inv_lattice_matrix[1,2]*df_voro["z"]
+        df_voro["z_frac"] = inv_lattice_matrix[2,0]*df_voro["x"] + inv_lattice_matrix[2,1]*df_voro["y"] + inv_lattice_matrix[2,2]*df_voro["z"]
+        df_voro["fractional_coordinates"] = df_voro.apply(lambda row: np.array([float(row.x_frac),float(row.y_frac),float(row.z_frac)]), axis=1)
 
         accessible_mean_energy, min_energy, boltz_energy = [], [], []
         for atom_type in self.atoms:
