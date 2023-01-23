@@ -206,6 +206,7 @@ class Screening():
                 self.data = df[['STRUCTURE_NAME','UnitCell']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['ZEO++']:
                 df['ProbeRadius'] = probe_radius
+                df['ProbeRadius'] = df['ProbeRadius'].astype(str)
                 self.data = df[['STRUCTURE_NAME','ProbeRadius']].to_records(index=False)
             elif type_ in self.SIMULATION_TYPES['HOME']:
                 self.atoms = '|'.join([mol2atoms[molecule] for molecule in MOLECULES])
