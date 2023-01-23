@@ -188,7 +188,12 @@ class Screening():
             self.data = df_structures[['STRUCTURE_NAME','Structures']].to_records(index=False)
         elif type_ in self.SIMULATION_TYPES['RASPA2']+self.SIMULATION_TYPES['ZEO++']+self.SIMULATION_TYPES['HOME']+self.SIMULATION_TYPES['CPP']:
             df_info = pd.read_csv(os.path.join(MATSCREEN, "data/info.csv"), encoding='utf-8').drop_duplicates(subset=['STRUCTURE_NAME'])
-            df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]','unit vector a', 'unit vector b', 'unit vector c']],how="left", on="STRUCTURE_NAME")
+            if cutoff != 12 :
+                df_info['a'] = ((cutoff*2)/df_box['x_box [A]'].astype(float)).astype(int) + 1
+                df_info['b'] = ((cutoff*2)/df_box['y_box [A]'].astype(float)).astype(int) + 1
+                df_info['c'] = ((cutoff*2)/df_box['z_box [A]'].astype(float)).astype(int) + 1
+                df_box['UnitCell'] = df_box['a'].astype(str) + ' ' + df_box['b'].astype(str) + ' ' + df_box['c'].astype(str)
+            df = pd.merge(df_structures[['STRUCTURE_NAME']], df_info[['STRUCTURE_NAME', 'UnitCell', 'Volume [nm^3]']],how="left", on="STRUCTURE_NAME")
             df['UnitCell'] = df['UnitCell'].fillna("1 1 1")
             if Threshold_volume > 0:
                 df['Volume [nm^3]'] = df['Volume [nm^3]'].fillna(Threshold_volume)
