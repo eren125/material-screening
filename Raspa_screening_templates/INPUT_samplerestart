@@ -1,6 +1,8 @@
 SimulationType                MonteCarlo
 NumberOfCycles                N_cycles
 NumberOfInitializationCycles  N_init
-RestartFile                   no
+PrintEvery                    N_print
+PrintPropertiesEvery          N_print
+RestartFile                   RESTART
 
 Forcefield                    FORCE_FIELD

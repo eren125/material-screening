@@ -1,9 +1,9 @@
 SimulationType                MolecularDynamics
 NumberOfCycles                N_cycles
-NumberOfInitializationCycles  100000
-NumberofEquilibrationCycles   100000
-PrintEvery                    N_cycles
-PrintPropertiesEvery          N_cycles
+NumberOfInitializationCycles  N_init
+NumberofEquilibrationCycles   N_init
+PrintEvery                    N_print
+PrintPropertiesEvery          N_print
 RestartFile                   RESTART
 ContinueAfterCrash            RESTART
 WriteBinaryRestartFileEvery   500000
@@ -12,20 +12,6 @@ Ensemble                      NVT
 TimeStep		              TIMESTEP
 
 Forcefield                    FORCE_FIELD
-ChargeMethod                  None
-
-Framework 0
-FrameworkName Arg
-UnitCells UNITCELL
-ExternalTemperature TEMPERATURE
-ComputeMSD yes
-PrintMSDEvery 500000
-
-NumberOfGrids N_ATOMS
-GridTypes ATOMS
-SpacingVDWGrid 0.1
-SpacingCoulombGrid 0.1
-UseTabularGrid yes
 
 Component 0 MoleculeName                     MOLECULE
             MoleculeDefinition               TraPPE

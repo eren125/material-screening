@@ -5,9 +5,10 @@ PrintPropertiesEvery          N_print
 RestartFile                   no
 
 Forcefield                    FORCE_FIELD
+EXTRA
 
 Framework 0
-ChargeMethod None
+ChargeMethod EWALD
 FrameworkName Arg
 UnitCells 1 1 1
 SurfaceAreaProbeDistance Sigma

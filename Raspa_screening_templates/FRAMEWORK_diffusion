@@ -1,0 +1,13 @@
+ChargeMethod EWALD
+FrameworkName Arg
+CutOffVDW CUTOFF
+UnitCells UNITCELL
+ExternalPressure PRESSURES
+NumberOfGrids N_ATOMS
+GridTypes ATOMS
+UseTabularGrid yes
+SpacingVDWGrid 0.15
+SpacingCoulombGrid 0.15
+ComputeMSD yes
+PrintMSDEvery 500000
+EXTRA

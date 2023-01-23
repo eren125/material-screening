@@ -1,0 +1,6 @@
+ChargeMethod EWALD
+FrameworkName Arg
+CutOffVDW CUTOFF
+UnitCells UNITCELL
+ExternalPressure PRESSURES
+EXTRA

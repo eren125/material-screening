@@ -6,19 +6,6 @@ RestartFile                   no
 
 Forcefield                    FORCE_FIELD
 
-Framework 0
-ChargeMethod None
-FrameworkName Arg
-CutOffVDW CUTOFF
-UnitCells UNITCELL
-ExternalTemperature 298.0
-
-NumberOfGrids N_ATOMS
-GridTypes ATOMS
-SpacingVDWGrid 0.1
-SpacingCoulombGrid 0.1
-UseTabularGrid yes
-
 Component 0 MoleculeName                     MOLECULE
             MoleculeDefinition               TraPPE
             IdealRosenbluthValue             1.0

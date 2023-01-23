@@ -3,10 +3,17 @@ node=$(hostname)
 source ./set_environment
 
 cd "$(dirname "$0")"
-cp INPUT Scripts/simulation_${1}.input
-sed -i "s/Arg/${1}/g;s/UNITCELL/${2}/g;s/FORCEFIELD/${3}/" Scripts/simulation_${1}.input
-echo "${1} ${2} ${3} Script DONE on $node"
-${RASPA_DIR}/bin/simulate -i Scripts/simulation_${1}.input > /dev/null 2>&1
-echo "${1} ${2} ${3} Simulation DONE on $node"
-rm Scripts/simulation_${1}.input
-rm Restart/System_0/restart_${1}_*
+trimmedpressures=`echo ${4} | sed 's/ //g'`
+NEWINPUT=Scripts/simulation_${1}_${3}_${trimmedpressures}.input
+cp INPUT $NEWINPUT
+
+ARG="${1}"
+IFS='_'
+read -ra splits <<< "$ARG"
+BLOCKPOCKET="${splits[0]}"
+IFS=' '
+
+sed -i "s/Arg/${1}/g;s/UNITCELL/${2}/g;s/TEMPERATURE/${3}/g;s/PRESSURES/${4}/g;s/RESTART/${5}/g;s/N_init/${6}/g;s/BLOCKPOCKET/$BLOCKPOCKET/g" $NEWINPUT
+echo "Script DONE on $node: ${1} ${2} ${3} ${trimmedpressures} ${5} ${6}"
+${RASPA_DIR}/bin/simulate -i $NEWINPUT >/dev/null
+echo "Simulation DONE on $node: ${1} ${2} ${3} ${trimmedpressures} ${5} ${6}"
