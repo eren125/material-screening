@@ -35,6 +35,9 @@ parser.add_argument('-N', '--Ncycles', nargs='?', default='1000',
 parser.add_argument('-Ni', '--Ninit', nargs='?', default='-1',
                     help='specify the number of initialization cycles per GCMC calculation\nDefault = min(N÷2, 10000)')
 
+parser.add_argument('-Np', '--Nprint', nargs='?', default='-1',
+                    help='specify the frequency of printings (prints every Nprints) per GCMC calculation\nDefault = min(N÷10, 100)')
+
 parser.add_argument('-t', '--type', nargs='?', default='grid',
                     help='specify the type of simulation you want to run on the structures\nDefault = grid')
 
@@ -118,7 +121,7 @@ ppn = int(args.procspernode)
 screen = Screening(structures_file, ppn, nprocs, pressures=PRESSURES, temperatures=temperatures, cutoff=cutoff,probe_radius=radius,
          force_field=FORCE_FIELD, MOLECULES=MOLECULES, type_=option, composition=COMPOSITION, cycles=CYCLES, OUTPUT_PATH=OUTPUT_PATH,
          EwaldPrecision=EwaldPrecision, Threshold_volume=Threshold_volume, RESTART=RESTART, N_init=N_init, MOVIE=MOVIE, EXTRA=EXTRA,
-         SKIPDONE=SKIPDONE, PressureParallelism=PressureParallelism)
+         SKIPDONE=SKIPDONE, PressureParallelism=PressureParallelism, print_every=int(args.Nprint))
 
 # launching the screening
 if args.execute == 'glost':

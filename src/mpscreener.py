@@ -22,7 +22,7 @@ class Screening():
     def __init__(self, structures_file, procs_per_node, nprocs, type_='grid', force_field="UFF",
                  MOLECULES=['xenon','krypton'], composition=None, pressures=[101300], temperatures=[298.0],
                  cycles=2000, EwaldPrecision=1e-6, cutoff=12.0, rejection=0.85, probe_radius=1.2,
-                 Threshold_volume=0, OUTPUT_PATH=".", RESTART=False, N_init=-1, MOVIE=False, EXTRA="",
+                 Threshold_volume=0, OUTPUT_PATH=".", RESTART=False, N_init=-1, print_every=-1, MOVIE=False, EXTRA="",
                  SKIPDONE=False, PressureParallelism='parallel'):
         """A class for screening purposes using Raspa2 for molecular simulations
         Initialise important variables like the name of the structures to screen and the unitcell associated
@@ -107,8 +107,8 @@ class Screening():
         if type_ not in available_types:
             raise ValueError(('%s not an option yet. Please choose between: ' +
                 ', '.join(['%s']*len(available_types))) % tuple([type_]+available_types))
-
-        print_every = 100
+        if print_every == -1:
+            print_every = min(cycles//10,100)
 
         if N_init == -1:
             N_init = min(cycles//2, 10000)//(9*RESTART+1)
