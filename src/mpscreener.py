@@ -84,7 +84,7 @@ class Screening():
         ### Initialisation of class objects and error catching ###
         self.SIMULATION_TYPES = {"RASPA2" : ['grid', 'ads', 'coad', 'ent', 'widom', 'widom_nogrid', 'vf', 'sp', 'diffusion','sa', 'pt', 'samplerestart'],
                     "INFO"   : ['info'],
-                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi', 'block'],
+                    "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi', 'block', 'psd','strinfo','volpo','oms'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
                     "CPP"    : ["raess", "cgrid", "barrier", "csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
                    }
@@ -346,6 +346,10 @@ class Screening():
                 if not os.path.exists(os.path.join(path_to_work, 'Coordinates')):
                     os.mkdir(os.path.join(path_to_work, 'Coordinates'))
                 os.system("cp %s %s"%(os.path.join(MATSCREEN, "Zeo++_screening_templates/extract_vertex.py"),path_to_work))
+            elif type_ in ["channel","sa","strinfo","pore","volpo","oms"]:
+                os.system("cp %s %s" % (os.path.join(MATSCREEN, "Zeo++_screening_templates/%s.py"%type_), path_to_work))
+                if type_ in ["channel","sa","pore","volpo"]:
+                    os.system("cp %s %s" % (os.path.join(MATSCREEN, "Zeo++_screening_templates/rad_uff_298K.rad"), path_to_work))
             RUN_file = self.generate(os.path.join(MATSCREEN, "Zeo++_screening_templates/run_%s"%type_), **kwargs)
             self.path_to_run = os.path.join(path_to_work, "run")
             self.write_file(RUN_file, self.path_to_run)

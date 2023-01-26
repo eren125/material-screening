@@ -1,0 +1,9 @@
+#! /bin/bash
+node=$(hostname)
+export MATSCREEN=/home/emmanuel/Documents/material-screening
+source ${MATSCREEN}/set_environment
+
+cd "$(dirname "$0")" 
+${ZEO_DIR}/network \
+-strinfo Output_info/results_${1}.strinfo \
+${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&
