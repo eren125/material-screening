@@ -1,6 +1,6 @@
 #! /bin/bash
 node=$(hostname)
-source ./set_environment
+source ${MATSCREEN}/set_environment
 
 cd "$(dirname "$0")"
 ${ZEO_DIR}/network -r rad_uff_298K.rad \

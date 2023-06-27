@@ -5,5 +5,5 @@ source ${MATSCREEN}/set_environment
 
 cd "$(dirname "$0")" 
 ${ZEO_DIR}/network \
--strinfo Output_info/results_${1}.strinfo \
+-strinfo Output/results_${1}.strinfo \
 ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&

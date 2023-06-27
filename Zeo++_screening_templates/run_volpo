@@ -5,6 +5,6 @@ source ${MATSCREEN}/set_environment
 
 cd "$(dirname "$0")" 
 ${ZEO_DIR}/network -r rad_uff_298K.rad  \
--volpo ${2} ${2} N_cycles Output_volpo/results_${1}.volpo \
+-volpo ${2} ${2} N_cycles Output/results_${1}.volpo \
 ${RASPA_DIR}/share/raspa/structures/cif/${1}.cif &&
 echo "structure ${1} radius ${2} pore Simulation DONE on $node"
