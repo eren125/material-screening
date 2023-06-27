@@ -7,9 +7,9 @@ df_box = pd.DataFrame([line.split() for line in lines])
 df_box['STRUCTURE_NAME'] = df_box[0].str.replace('Output/System_0/output_','',regex=False).str.replace('_1.1.1_298.000000_0.data-','',regex=False)
 
 df_box.rename(columns={1:'x_box [A]',2:'y_box [A]',3:'z_box [A]'},inplace=True)
-df_box['a'] = ((cutoff*2)/df_box['x_box [A]'].astype(float)).astype(int) + 1
-df_box['b'] = ((cutoff*2)/df_box['y_box [A]'].astype(float)).astype(int) + 1
-df_box['c'] = ((cutoff*2)/df_box['z_box [A]'].astype(float)).astype(int) + 1
+df_box['a'] = ((cutoff*2)/df_box['x_box [A]'].astype(float)).apply(np.ceil).astype(int)
+df_box['b'] = ((cutoff*2)/df_box['y_box [A]'].astype(float)).apply(np.ceil).astype(int)
+df_box['c'] = ((cutoff*2)/df_box['z_box [A]'].astype(float)).apply(np.ceil).astype(int)
 
 df_box['UnitCell'] = df_box['a'].astype(str) + ' ' + df_box['b'].astype(str) + ' ' + df_box['c'].astype(str)
 
