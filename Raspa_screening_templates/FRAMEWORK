@@ -6,6 +6,6 @@ ExternalPressure PRESSURES
 NumberOfGrids N_ATOMS
 GridTypes ATOMS
 UseTabularGrid yes
-SpacingVDWGrid 0.15
-SpacingCoulombGrid 0.15
+SpacingVDWGrid 0.1
+SpacingCoulombGrid 0.1
 EXTRA

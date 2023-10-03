@@ -17,9 +17,9 @@ ExternalPressure POINT_NUMBER
 
 UseTabularGrid yes
 NumberOfGrids N_atoms
-ChargeMethod EWALD
+ChargeMethod None
 GridTypes ATOMS
-SpacingVDWGrid 0.15
+SpacingVDWGrid 0.1
 CutOffVDW 12
 
 Component 0 MoleculeName                     MOLECULE
