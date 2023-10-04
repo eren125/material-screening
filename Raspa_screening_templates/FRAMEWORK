@@ -1,4 +1,4 @@
-ChargeMethod EWALD
+ChargeMethod None
 FrameworkName Arg
 CutOffVDW CUTOFF
 UnitCells UNITCELL
