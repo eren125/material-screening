@@ -1,4 +1,5 @@
 #!/bin/bash
+source ${MATSCREEN}/set_environment
 
 cd "$(dirname "$0")"
 

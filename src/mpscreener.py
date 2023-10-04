@@ -346,9 +346,9 @@ class Screening():
                 if not os.path.exists(os.path.join(path_to_work, 'Coordinates')):
                     os.mkdir(os.path.join(path_to_work, 'Coordinates'))
                 os.system("cp %s %s"%(os.path.join(MATSCREEN, "Zeo++_screening_templates/extract_vertex.py"),path_to_work))
-            elif type_ in ["channel","sa","strinfo","pore","volpo","oms"]:
+            elif type_ in ["channel","sa","strinfo","pore","volpo","oms","surface","volume"]:
                 os.system("cp %s %s" % (os.path.join(MATSCREEN, "Zeo++_screening_templates/%s.py"%type_), path_to_work))
-                if type_ in ["channel","sa","pore","volpo"]:
+                if type_ in ["channel","sa","pore","volpo","surface","volume"]:
                     os.system("cp %s %s" % (os.path.join(MATSCREEN, "Zeo++_screening_templates/rad_uff_298K.rad"), path_to_work))
             RUN_file = self.generate(os.path.join(MATSCREEN, "Zeo++_screening_templates/run_%s"%type_), **kwargs)
             self.path_to_run = os.path.join(path_to_work, "run")
@@ -378,7 +378,7 @@ class Screening():
             else:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
 
-        #os.system("bash %s %s"%(os.path.join(MATSCREEN, "copy_env.sh"), os.path.join(path_to_work, "set_environment")))
+        #os.system("cp %s %s"%(os.path.join(MATSCREEN, "set_environment"),os.path.join(path_to_work, "set_environment")))
 
 
     @staticmethod

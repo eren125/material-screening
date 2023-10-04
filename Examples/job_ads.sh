@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./set_environment
+source ${MATSCREEN}/set_environment
 #export NODES=$(srun hostname | sort | uniq)
 #echo "Running on nodes:"
 #echo "${NODES}"
