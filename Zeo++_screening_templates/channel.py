@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np 
 
 import os
-os.system("cat Output/*.chan > results_chan.data")
+os.system("head -1 -q Output/*.chan > results_chan.data")
 
 max_col = 40
 df = pd.read_csv('results_chan.data', delim_whitespace=True, header=None , names=np.arange(0,max_col))

@@ -346,9 +346,9 @@ class Screening():
                 if not os.path.exists(os.path.join(path_to_work, 'Coordinates')):
                     os.mkdir(os.path.join(path_to_work, 'Coordinates'))
                 os.system("cp %s %s"%(os.path.join(MATSCREEN, "Zeo++_screening_templates/extract_vertex.py"),path_to_work))
-            elif type_ in ["channel","sa","strinfo","pore","volpo","oms","surface","volume"]:
+            elif type_ in ["channel","sa","strinfo","pore","volpo","oms","surface","volume","psd"]:
                 os.system("cp %s %s" % (os.path.join(MATSCREEN, "Zeo++_screening_templates/%s.py"%type_), path_to_work))
-                if type_ in ["channel","sa","pore","volpo","surface","volume"]:
+                if type_ in ["channel","sa","pore","volpo","surface","volume","psd"]:
                     os.system("cp %s %s" % (os.path.join(MATSCREEN, "Zeo++_screening_templates/rad_uff_298K.rad"), path_to_work))
             RUN_file = self.generate(os.path.join(MATSCREEN, "Zeo++_screening_templates/run_%s"%type_), **kwargs)
             self.path_to_run = os.path.join(path_to_work, "run")
