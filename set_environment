@@ -4,7 +4,9 @@ export MATSCREEN=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd) # cu
 # Modify the following lines to reflect the accurate paths to the libraries on your system.
 export RASPA_DIR=$MATSCREEN/../RASPA2/simulations
 export ZEO_DIR=$MATSCREEN/../zeo++-0.3
+export RAESS_DIR=$MATSCREEN/../RAESS
 export CPP_DIR=$MATSCREEN/../surface-csampler
+export CTUTRAST_DIR=$MATSCREEN/../ctutrast
 export GLOST_DIR=~/glost
 
 # Fill with the python executable with the correct environment (satisfying requirements.txt)

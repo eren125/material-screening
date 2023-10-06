@@ -321,12 +321,12 @@ class Screening():
                     self.write_file(merge_file, os.path.join(path_to_work,"merge_info.py"))
 
             restartinitial = Path(os.path.join(path_to_work, "RestartInitial"))
-            if self.RESTART and not (restartinitial / "System_0").exists():
-                restartfolder = os.path.join(path_to_work, "Restart")
-                if not os.path.exists(restartfolder):
-                    raise FileNotFoundError("No RestartInitial nor Restart subfolder at %s, cannot make a restarted job."%path_to_work)
-                print("The Restart subfolder at %s is renamed into RestartInitial prior to starting the simulation."%path_to_work)
-                os.system('mv %s %s'%(restartfolder, restartinitial))
+#            if self.RESTART and not (restartinitial / "System_0").exists():
+#                restartfolder = os.path.join(path_to_work, "Restart")
+#                if not os.path.exists(restartfolder):
+#                    raise FileNotFoundError("No RestartInitial nor Restart subfolder at %s, cannot make a restarted job."%path_to_work)
+#                print("The Restart subfolder at %s is renamed into RestartInitial prior to starting the simulation."%path_to_work)
+#                os.system('mv %s %s'%(restartfolder, restartinitial))
             if os.path.exists(os.path.join(path_to_work, "RestartInitial/System_0")):
                 toexpand = list((restartinitial / "System_0").glob("*_"))
                 for fname in toexpand:
