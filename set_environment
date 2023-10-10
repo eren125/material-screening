@@ -6,6 +6,7 @@ export RASPA_DIR=$MATSCREEN/../RASPA2/simulations
 export ZEO_DIR=$MATSCREEN/../zeo++-0.3
 export RAESS_DIR=$MATSCREEN/../RAESS
 export CPP_DIR=$MATSCREEN/../surface-csampler
+export GRAED_DIR=$MATSCREEN/../GrAED
 export CTUTRAST_DIR=$MATSCREEN/../ctutrast
 export GLOST_DIR=~/glost
 

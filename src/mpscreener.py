@@ -86,7 +86,7 @@ class Screening():
                     "INFO"   : ['info'],
                     "ZEO++"  : ['surface', 'volume', 'pore', 'channel', 'voronoi', 'block', 'psd','strinfo','volpo','oms'],
                     "HOME"   : ['sample', 'surface_sample', 'findsym'],
-                    "CPP"    : ["raess", "cgrid", "barrier", "csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
+                    "CPP"    : ["raess", "cgrid", "graed", "barrier", "csurface", "csurface_spiral", "csurface_radius", "csurface_acc","csurface_sa"]
                    }
         try:
             self.NODES = os.environ['NODES']
@@ -375,8 +375,14 @@ class Screening():
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "ASA_m2_cm3":[], "time":[]}).to_csv('cpp_output_%s_%s_%s.csv'%(self.n_sample,self.rej_coeff,self.acc_coeff),index=False)
             elif type_ in ['csurface_acc','csurface_sa']:
                 pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.acc_coeff),index=False)
+            elif type_ in ['cgrid']:
+                pd.DataFrame(columns={"Structure_name":[], "Enthalpy_grid_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cgrid_output_%s.csv'%(self.acc_coeff),index=False)
+            elif type_ in ['graed']:
+                pd.DataFrame(columns={"Structure_name":[], "Enthalpy_grid_kjmol":[], "enthalpy_std":[], "enthalpy_skew":[], "enthalpy_kurt":[], "mean_grid":[], "std_grid":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('graed_output_%s.csv'%(self.acc_coeff),index=False)
+            elif type_ in ['barrier']:
+                pd.DataFrame(columns={"Structure_name":[], "Adsorption_enthalpy[kJ/mol]":[], "Henry_const[mol/kg/Pa]":[], "Minimum_energy_channel[kJ/mol]":[], "Barrier_energy[kJ/mol]":[], "Time[s]":[]}).to_csv('output_barrier.csv',index=False)
             else:
-                pd.DataFrame(columns={"Structure_name":[], "Enthalpy_surface_kjmol":[], "Henry_coeff_molkgPa":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
+                pd.DataFrame(columns={"Structure_name":[], "?":[], "time":[]}).to_csv('cpp_output_%s.csv'%(self.n_sample),index=False)
 
         #os.system("cp %s %s"%(os.path.join(MATSCREEN, "set_environment"),os.path.join(path_to_work, "set_environment")))
 
